@@ -9,9 +9,9 @@ readme = "README.md"
 repository = "https://github.com/paulkre/bevy_image_export"
 
 [dependencies]
-bevy = ">=0.8.0"
-futures = "*"
-futures-lite = "*"
+bevy = "0.8"
+futures = "0.3"
+futures-lite = "1"
 image = ">=0.24"
 wgpu = ">=0.12"
 
