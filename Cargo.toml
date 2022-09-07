@@ -15,10 +15,6 @@ futures-lite = "*"
 image = ">=0.24"
 wgpu = ">=0.12"
 
-[[example]]
-name = "3d"
-path = "examples/3d.rs"
-
 [profile.dev]
 opt-level = 1
 
