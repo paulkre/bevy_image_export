@@ -5,8 +5,6 @@ A Bevy plugin for exporting your app as an image sequence.
 ## Usage
 
 ```rust
-use std::f32::consts::TAU;
-
 use bevy::{prelude::*, winit::WinitSettings};
 use bevy_image_export::{ImageExportCamera, ImageExportPlugin};
 
@@ -44,11 +42,13 @@ fn setup(
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })
+        // Add a child camera to your main camera and insert the ImageExportCamera component.
         .with_children(|parent| {
             parent
                 .spawn_bundle(Camera3dBundle::default())
                 .insert(ImageExportCamera);
         });
+
     // ...
 }
 ```
