@@ -7,18 +7,36 @@ use image::{ImageBuffer, Rgba};
 
 use super::plugin::ExportThreads;
 
-#[derive(Component, Default)]
-pub struct ImageExportCamera;
+#[derive(Component, Clone)]
+pub struct ImageExportCamera {
+    pub output_dir: &'static str,
+    pub extension: &'static str,
+}
+
+impl Default for ImageExportCamera {
+    fn default() -> Self {
+        Self {
+            output_dir: "out",
+            extension: "png",
+        }
+    }
+}
 
 #[derive(Component, Clone)]
 pub struct ImageExportTask {
     pub render_target: Handle<Image>,
     pub output_buffer: Buffer,
     pub size: UVec2,
+    pub settings: ImageExportCamera,
 }
 
 impl ImageExportTask {
-    pub fn new(device: &RenderDevice, render_target: Handle<Image>, size: UVec2) -> Self {
+    pub fn new(
+        device: &RenderDevice,
+        render_target: Handle<Image>,
+        size: UVec2,
+        settings: ImageExportCamera,
+    ) -> Self {
         Self {
             render_target,
             size,
@@ -28,6 +46,7 @@ impl ImageExportTask {
                 usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
                 mapped_at_creation: false,
             }),
+            settings,
         }
     }
 }
@@ -35,10 +54,10 @@ impl ImageExportTask {
 pub fn setup_export_data(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
-    mut query: Query<(Entity, &mut Camera), (With<ImageExportCamera>, Without<ImageExportTask>)>,
+    mut query: Query<(Entity, &mut Camera, &ImageExportCamera), Without<ImageExportTask>>,
     device: Res<RenderDevice>,
 ) {
-    query.iter_mut().for_each(|(entity, mut camera)| {
+    query.iter_mut().for_each(|(entity, mut camera, settings)| {
         let size = camera
             .physical_target_size()
             .expect("Could not determine export resolution");
@@ -69,9 +88,12 @@ pub fn setup_export_data(
 
         camera.target = RenderTarget::Image(image_handle.clone());
 
-        commands
-            .entity(entity)
-            .insert(ImageExportTask::new(&device, image_handle, size));
+        commands.entity(entity).insert(ImageExportTask::new(
+            &device,
+            image_handle,
+            size,
+            settings.clone(),
+        ));
     })
 }
 
@@ -96,6 +118,7 @@ pub fn export_image(
         |ImageExportTask {
              output_buffer,
              size,
+             settings,
              ..
          }| {
             let data = {
@@ -121,10 +144,11 @@ pub fn export_image(
                 let frame_id = *frame_id;
                 let export_threads = export_threads.clone();
                 let size = *size;
+                let settings = settings.clone();
 
                 *export_threads.count.lock().unwrap() += 1;
                 std::thread::spawn(move || {
-                    save_image_file(data, size, "out", frame_id);
+                    save_image_file(data, size, frame_id, settings);
                     *export_threads.count.lock().unwrap() -= 1;
                 });
             }
@@ -132,17 +156,20 @@ pub fn export_image(
     );
 }
 
-fn save_image_file(mut data: Vec<u8>, size: UVec2, export_dir: &'static str, frame_id: u32) {
+fn save_image_file(mut data: Vec<u8>, size: UVec2, frame_id: u32, settings: ImageExportCamera) {
     bgra_to_rgba(&mut data);
     let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(size.x, size.y, data).unwrap();
 
-    match std::fs::create_dir_all(export_dir) {
+    match std::fs::create_dir_all(settings.output_dir) {
         Err(_) => panic!("Output path could not be created"),
         _ => {}
     }
 
     buffer
-        .save(format!("{}/{:05}.png", export_dir, frame_id))
+        .save(format!(
+            "{}/{:05}.{}",
+            settings.output_dir, frame_id, settings.extension
+        ))
         .unwrap();
 }
 

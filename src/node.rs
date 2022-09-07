@@ -34,6 +34,7 @@ impl bevy::render::render_graph::Node for ImageExportNode {
                  render_target,
                  output_buffer,
                  size,
+                 ..
              }| {
                 let image = world
                     .get_resource::<RenderAssets<Image>>()

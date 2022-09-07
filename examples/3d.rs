@@ -43,7 +43,7 @@ fn setup(
         .with_children(|parent| {
             parent
                 .spawn_bundle(Camera3dBundle::default())
-                .insert(ImageExportCamera);
+                .insert(ImageExportCamera::default());
         });
 
     commands

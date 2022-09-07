@@ -42,11 +42,16 @@ fn setup(
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })
+
         // Add a child camera to your main camera and insert the ImageExportCamera component.
         .with_children(|parent| {
             parent
                 .spawn_bundle(Camera3dBundle::default())
-                .insert(ImageExportCamera);
+                .insert(ImageExportCamera {
+                    // The rendered frames will be saved to "./out/[#####].png".
+                    output_dir: "out",
+                    extension: "png",
+                });
         });
 
     // ...
