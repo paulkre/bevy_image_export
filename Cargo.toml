@@ -2,7 +2,7 @@
 name = "bevy_image_export"
 version = "0.1.0"
 edition = "2021"
-categories = ["graphics", "rendering", "export", "io"]
+categories = ["graphics", "rendering"]
 description = "Bevy plugin for exporting your app as an image sequence"
 license = "MIT"
 readme = "README.md"
