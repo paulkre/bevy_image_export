@@ -1,0 +1,26 @@
+[package]
+name = "bevy_image_export"
+version = "0.0.0"
+edition = "2021"
+categories = ["graphics", "rendering", "export", "io"]
+description = "Bevy plugin for exporting your app as an image sequence"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/paulkre/bevy_image_export"
+
+[dependencies]
+bevy = ">=0.8.0"
+futures = "*"
+futures-lite = "*"
+image = ">=0.24"
+wgpu = ">=0.12"
+
+[[example]]
+name = "3d"
+path = "examples/3d.rs"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
