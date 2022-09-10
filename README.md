@@ -57,3 +57,11 @@ fn setup(
     // ...
 }
 ```
+
+## Creating a MP4 file
+
+With [FFmpeg](https://ffmpeg.org) installed, you can run the following command to convert your exported image sequence to a MP4 video file:
+
+```bash
+ffmpeg -r 60 -i out/%05d.png -vcodec libx264 -crf 25 -pix_fmt yuv420p out.mp4
+```
