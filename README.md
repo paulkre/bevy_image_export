@@ -1,6 +1,6 @@
 # Bevy Image Export plugin
 
-A Bevy plugin for exporting your app as an image sequence.
+A Bevy plugin enabling you to render image sequences.
 
 ## Usage
 
