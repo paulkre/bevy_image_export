@@ -6,7 +6,10 @@ use super::{
 };
 use bevy::{
     prelude::*,
-    render::{main_graph::node::CAMERA_DRIVER, render_graph::RenderGraph, RenderApp, RenderStage},
+    render::{
+        camera::CameraUpdateSystem, main_graph::node::CAMERA_DRIVER, render_graph::RenderGraph,
+        RenderApp, RenderStage,
+    },
 };
 
 #[derive(Default, Clone)]
@@ -29,7 +32,10 @@ pub struct ImageExportPlugin {
 
 impl Plugin for ImageExportPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(CoreStage::PostUpdate, setup_export_data);
+        app.add_system_to_stage(
+            CoreStage::PostUpdate,
+            setup_export_data.after(CameraUpdateSystem),
+        );
 
         let render_app = app.sub_app_mut(RenderApp);
 
