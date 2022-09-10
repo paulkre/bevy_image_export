@@ -169,13 +169,8 @@ fn save_image_file(mut data: Vec<u8>, size: UVec2, frame_id: u32, settings: Imag
 
 fn bgra_to_rgba(data: &mut Vec<u8>) {
     for src in data.chunks_exact_mut(4) {
-        let r = src[2];
-        let g = src[1];
         let b = src[0];
-        let a = src[3];
-        src[0] = r;
-        src[1] = g;
+        src[0] = src[2];
         src[2] = b;
-        src[3] = a;
     }
 }
