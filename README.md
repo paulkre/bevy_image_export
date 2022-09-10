@@ -1,4 +1,4 @@
-# Bevy Image Export plugin
+# Bevy Image Export
 
 A Bevy plugin enabling you to render image sequences.
 
