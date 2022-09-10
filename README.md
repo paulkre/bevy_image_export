@@ -2,8 +2,6 @@
 
 A Bevy plugin for exporting your app as an image sequence.
 
-The plugin currently only works in 3D.
-
 ## Usage
 
 ```rust
