@@ -27,16 +27,10 @@ pub struct ImageExportTask {
     pub render_target: Handle<Image>,
     pub output_buffer: Buffer,
     pub size: UVec2,
-    pub settings: ImageExportCamera,
 }
 
 impl ImageExportTask {
-    pub fn new(
-        device: &RenderDevice,
-        render_target: Handle<Image>,
-        size: UVec2,
-        settings: ImageExportCamera,
-    ) -> Self {
+    pub fn new(device: &RenderDevice, render_target: Handle<Image>, size: UVec2) -> Self {
         Self {
             render_target,
             size,
@@ -46,7 +40,6 @@ impl ImageExportTask {
                 usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
                 mapped_at_creation: false,
             }),
-            settings,
         }
     }
 }
@@ -54,10 +47,10 @@ impl ImageExportTask {
 pub fn setup_export_data(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
-    mut query: Query<(Entity, &mut Camera, &ImageExportCamera), Without<ImageExportTask>>,
+    mut query: Query<(Entity, &mut Camera), (With<ImageExportCamera>, Without<ImageExportTask>)>,
     device: Res<RenderDevice>,
 ) {
-    query.iter_mut().for_each(|(entity, mut camera, settings)| {
+    query.iter_mut().for_each(|(entity, mut camera)| {
         let size = camera
             .physical_target_size()
             .expect("Could not determine export resolution");
@@ -88,26 +81,25 @@ pub fn setup_export_data(
 
         camera.target = RenderTarget::Image(image_handle.clone());
 
-        commands.entity(entity).insert(ImageExportTask::new(
-            &device,
-            image_handle,
-            size,
-            settings.clone(),
-        ));
-    })
+        commands
+            .entity(entity)
+            .insert(ImageExportTask::new(&device, image_handle, size));
+    });
 }
 
 pub fn extract_image_export_tasks(
     mut commands: Commands,
-    tasks: Extract<Query<(Entity, &ImageExportTask)>>,
+    tasks: Extract<Query<(Entity, &ImageExportTask, &ImageExportCamera)>>,
 ) {
-    tasks.iter().for_each(|(entity, data)| {
-        commands.get_or_spawn(entity).insert(data.clone());
+    tasks.iter().for_each(|(entity, data, settings)| {
+        commands
+            .get_or_spawn(entity)
+            .insert_bundle((data.clone(), settings.clone()));
     });
 }
 
 pub fn export_image(
-    tasks: Query<&ImageExportTask>,
+    tasks: Query<(&ImageExportTask, &ImageExportCamera)>,
     render_device: Res<RenderDevice>,
     mut frame_id: Local<u32>,
     export_threads: Res<ExportThreads>,
@@ -115,12 +107,14 @@ pub fn export_image(
     *frame_id = frame_id.wrapping_add(1);
 
     tasks.iter().for_each(
-        |ImageExportTask {
-             output_buffer,
-             size,
-             settings,
-             ..
-         }| {
+        |(
+            ImageExportTask {
+                output_buffer,
+                size,
+                ..
+            },
+            settings,
+        )| {
             let data = {
                 let slice = output_buffer.slice(..);
 
