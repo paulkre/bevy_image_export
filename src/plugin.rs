@@ -25,6 +25,7 @@ impl ExportThreads {
     }
 }
 
+/// Plugin enabling the generation of image sequences.
 #[derive(Default)]
 pub struct ImageExportPlugin {
     pub threads: ExportThreads,

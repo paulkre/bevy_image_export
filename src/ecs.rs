@@ -7,9 +7,12 @@ use image::{ImageBuffer, Rgba};
 
 use super::plugin::ExportThreads;
 
+/// Any camera entity holding this component will render its view to an image sequence in the file system.
 #[derive(Component, Clone)]
 pub struct ImageExportCamera {
+    /// The directory that image files will be saved to.
     pub output_dir: &'static str,
+    /// The image file extension. Supported extensions are listed [here](https://github.com/image-rs/image#supported-image-formats).
     pub extension: &'static str,
 }
 
