@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 
+use crate::ecs::update_frame_id;
+
 use super::{
     ecs::{export_image, extract_image_export_tasks, setup_export_data},
     node::{ImageExportNode, NODE_NAME},
@@ -37,6 +39,7 @@ impl Plugin for ImageExportPlugin {
             CoreStage::PostUpdate,
             setup_export_data.after(CameraUpdateSystem),
         );
+        app.add_system_to_stage(CoreStage::PostUpdate, update_frame_id);
 
         let render_app = app.sub_app_mut(RenderApp);
 

@@ -30,6 +30,7 @@ pub struct ImageExportTask {
     pub render_target: Handle<Image>,
     pub output_buffer: Buffer,
     pub size: UVec2,
+    pub frame_id: u32,
 }
 
 impl ImageExportTask {
@@ -43,6 +44,7 @@ impl ImageExportTask {
                 usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
                 mapped_at_creation: false,
             }),
+            frame_id: 1,
         }
     }
 }
@@ -101,56 +103,50 @@ pub fn extract_image_export_tasks(
     });
 }
 
+pub fn update_frame_id(mut tasks: Query<&mut ImageExportTask>) {
+    tasks.iter_mut().for_each(|mut task| {
+        task.frame_id = task.frame_id.wrapping_add(1);
+    });
+}
+
 pub fn export_image(
     tasks: Query<(&ImageExportTask, &ImageExportCamera)>,
     render_device: Res<RenderDevice>,
-    mut frame_id: Local<u32>,
     export_threads: Res<ExportThreads>,
 ) {
-    *frame_id = frame_id.wrapping_add(1);
-
-    tasks.iter().for_each(
-        |(
-            ImageExportTask {
-                output_buffer,
-                size,
-                ..
-            },
-            settings,
-        )| {
-            let data = {
-                let slice = output_buffer.slice(..);
-
-                {
-                    let (mapping_tx, mapping_rx) = oneshot::channel();
-
-                    render_device.map_buffer(&slice, MapMode::Read, move |res| {
-                        mapping_tx.send(res).unwrap();
-                    });
-
-                    render_device.poll(wgpu::Maintain::Wait);
-                    futures_lite::future::block_on(mapping_rx).unwrap().unwrap();
-                }
-
-                slice.get_mapped_range().to_vec()
-            };
-
-            output_buffer.unmap();
+    tasks.iter().for_each(|(task, settings)| {
+        let data = {
+            let slice = task.output_buffer.slice(..);
 
             {
-                let frame_id = *frame_id;
-                let export_threads = export_threads.clone();
-                let size = *size;
-                let settings = settings.clone();
+                let (mapping_tx, mapping_rx) = oneshot::channel();
 
-                *export_threads.count.lock().unwrap() += 1;
-                std::thread::spawn(move || {
-                    save_image_file(data, size, frame_id, settings);
-                    *export_threads.count.lock().unwrap() -= 1;
+                render_device.map_buffer(&slice, MapMode::Read, move |res| {
+                    mapping_tx.send(res).unwrap();
                 });
+
+                render_device.poll(wgpu::Maintain::Wait);
+                futures_lite::future::block_on(mapping_rx).unwrap().unwrap();
             }
-        },
-    );
+
+            slice.get_mapped_range().to_vec()
+        };
+
+        task.output_buffer.unmap();
+
+        {
+            let frame_id = task.frame_id;
+            let export_threads = export_threads.clone();
+            let size = task.size;
+            let settings = settings.clone();
+
+            *export_threads.count.lock().unwrap() += 1;
+            std::thread::spawn(move || {
+                save_image_file(data, size, frame_id, settings);
+                *export_threads.count.lock().unwrap() -= 1;
+            });
+        }
+    });
 }
 
 fn save_image_file(mut data: Vec<u8>, size: UVec2, frame_id: u32, settings: ImageExportCamera) {

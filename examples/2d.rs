@@ -37,10 +37,6 @@ fn setup(
     commands.spawn_bundle(Camera2dBundle::default());
 
     commands
-        .spawn_bundle(Camera2dBundle::default())
-        .insert(ImageExportCamera::default());
-
-    commands
         .spawn_bundle(MaterialMesh2dBundle {
             mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
             transform: Transform::default().with_scale(Vec3::splat(64.)),
@@ -50,9 +46,19 @@ fn setup(
         .insert(Shape);
 }
 
-fn update(mut frame_id: Local<u32>, mut query: Query<&mut Transform, With<Shape>>) {
+fn update(
+    mut commands: Commands,
+    mut frame_id: Local<u32>,
+    mut query: Query<&mut Transform, With<Shape>>,
+) {
     *frame_id = frame_id.wrapping_add(1);
     let time = (*frame_id as f32) * (1.0 / 60.0);
+
+    if *frame_id == 5 {
+        commands
+            .spawn_bundle(Camera2dBundle::default())
+            .insert(ImageExportCamera::default());
+    }
 
     query.iter_mut().for_each(|mut transform| {
         transform.translation = Vec3::Y * 384. * (time * PI).sin();
