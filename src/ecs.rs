@@ -35,12 +35,14 @@ pub struct ImageExportTask {
 
 impl ImageExportTask {
     pub fn new(device: &RenderDevice, render_target: Handle<Image>, size: UVec2) -> Self {
+        let padded_bytes_per_row = RenderDevice::align_copy_bytes_per_row((size.x) as usize) * 4;
+
         Self {
             render_target,
             size,
             output_buffer: device.create_buffer(&BufferDescriptor {
                 label: Some("output_buffer"),
-                size: ((std::mem::size_of::<u32>() as u32) * size.x * size.y) as BufferAddress,
+                size: padded_bytes_per_row as u64 * size.y as u64,
                 usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
                 mapped_at_creation: false,
             }),
@@ -134,36 +136,34 @@ pub fn export_image(
 
         task.output_buffer.unmap();
 
-        {
-            let frame_id = task.frame_id;
-            let export_threads = export_threads.clone();
-            let size = task.size;
-            let settings = settings.clone();
+        let frame_id = task.frame_id;
+        let export_threads = export_threads.clone();
+        let size = task.size;
+        let settings = settings.clone();
 
-            *export_threads.count.lock().unwrap() += 1;
-            std::thread::spawn(move || {
-                save_image_file(data, size, frame_id, settings);
-                *export_threads.count.lock().unwrap() -= 1;
-            });
-        }
+        *export_threads.count.lock().unwrap() += 1;
+        std::thread::spawn(move || {
+            save_image_file(data, size, frame_id, settings);
+            *export_threads.count.lock().unwrap() -= 1;
+        });
     });
 }
 
 fn save_image_file(mut data: Vec<u8>, size: UVec2, frame_id: u32, settings: ImageExportCamera) {
     bgra_to_rgba(&mut data);
-    let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(size.x, size.y, data).unwrap();
 
     match std::fs::create_dir_all(settings.output_dir) {
         Err(_) => panic!("Output path could not be created"),
         _ => {}
     }
 
-    buffer
-        .save(format!(
-            "{}/{:05}.{}",
-            settings.output_dir, frame_id, settings.extension
-        ))
-        .unwrap();
+    let path = format!(
+        "{}/{:05}.{}",
+        settings.output_dir, frame_id, settings.extension
+    );
+
+    let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(size.x, size.y, data).unwrap();
+    buffer.save(path).unwrap();
 }
 
 fn bgra_to_rgba(data: &mut Vec<u8>) {

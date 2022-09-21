@@ -1,3 +1,5 @@
+use std::num::NonZeroU32;
+
 use bevy::{
     prelude::*,
     render::{render_asset::RenderAssets, render_resource::*, renderer::RenderDevice},
@@ -42,6 +44,13 @@ impl bevy::render::render_graph::Node for ImageExportNode {
                     .get(&render_target)
                     .unwrap();
 
+                let format = image.texture_format.describe();
+
+                let padded_bytes_per_row = RenderDevice::align_copy_bytes_per_row(
+                    (size.x as usize / format.block_dimensions.0 as usize)
+                        * format.block_size as usize,
+                );
+
                 render_context.command_encoder.copy_texture_to_buffer(
                     image.texture.as_image_copy(),
                     ImageCopyBuffer {
@@ -49,14 +58,9 @@ impl bevy::render::render_graph::Node for ImageExportNode {
                         layout: ImageDataLayout {
                             offset: 0,
                             bytes_per_row: Some(
-                                std::num::NonZeroU32::new(
-                                    (RenderDevice::align_copy_bytes_per_row((size.x) as usize)
-                                        as u32)
-                                        * 4,
-                                )
-                                .unwrap(),
+                                NonZeroU32::new(padded_bytes_per_row as u32).unwrap(),
                             ),
-                            rows_per_image: None,
+                            rows_per_image: Some(NonZeroU32::new(size.y).unwrap()),
                         },
                     },
                     Extent3d {
