@@ -13,16 +13,18 @@ fn main() {
     let export_threads = export_plugin.threads.clone();
 
     App::new()
-        .insert_resource(WindowDescriptor {
-            width: 1024.,
-            height: 1024.,
-            ..default()
-        })
         .insert_resource(WinitSettings {
             return_from_run: true,
             ..default()
         })
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            window: WindowDescriptor {
+                width: 1024.,
+                height: 1024.,
+                ..default()
+            },
+            ..default()
+        }))
         .add_plugin(export_plugin)
         // ...
         .run();
@@ -38,7 +40,7 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands
-        .spawn_bundle(Camera3dBundle {
+        .spawn(Camera3dBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })
@@ -46,7 +48,7 @@ fn setup(
         // Add a child camera to your main camera and insert the ImageExportCamera component.
         .with_children(|parent| {
             parent
-                .spawn_bundle(Camera3dBundle::default())
+                .spawn(Camera3dBundle::default())
                 .insert(ImageExportCamera {
                     // The rendered frames will be saved to "./out/[#####].png".
                     output_dir: "out",

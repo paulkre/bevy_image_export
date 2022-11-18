@@ -8,16 +8,18 @@ fn main() {
     let export_threads = export_plugin.threads.clone();
 
     App::new()
-        .insert_resource(WindowDescriptor {
-            width: 1024.,
-            height: 1024.,
-            ..default()
-        })
         .insert_resource(WinitSettings {
             return_from_run: true,
             ..default()
         })
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            window: WindowDescriptor {
+                width: 1024.,
+                height: 1024.,
+                ..default()
+            },
+            ..default()
+        }))
         .add_plugin(export_plugin)
         .add_startup_system(setup)
         .add_system(update)
@@ -34,10 +36,10 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default());
 
     commands
-        .spawn_bundle(MaterialMesh2dBundle {
+        .spawn(MaterialMesh2dBundle {
             mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
             transform: Transform::default().with_scale(Vec3::splat(64.)),
             material: materials.add(ColorMaterial::from(Color::PURPLE)),
@@ -56,7 +58,7 @@ fn update(
 
     if *frame_id == 5 {
         commands
-            .spawn_bundle(Camera2dBundle::default())
+            .spawn(Camera2dBundle::default())
             .insert(ImageExportCamera::default());
     }
 

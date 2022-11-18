@@ -8,16 +8,18 @@ fn main() {
     let export_threads = export_plugin.threads.clone();
 
     App::new()
-        .insert_resource(WindowDescriptor {
-            width: 1024.,
-            height: 1024.,
-            ..default()
-        })
         .insert_resource(WinitSettings {
             return_from_run: true,
             ..default()
         })
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            window: WindowDescriptor {
+                width: 1024.,
+                height: 1024.,
+                ..default()
+            },
+            ..default()
+        }))
         .add_plugin(export_plugin)
         .insert_resource(AmbientLight {
             color: Color::WHITE,
@@ -36,26 +38,26 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands
-        .spawn_bundle(Camera3dBundle {
+        .spawn(Camera3dBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })
         .with_children(|parent| {
             parent
-                .spawn_bundle(Camera3dBundle::default())
+                .spawn(Camera3dBundle::default())
                 .insert(ImageExportCamera::default());
         });
 
     commands
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Icosphere::default())),
             material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
             ..default()
         })
         .with_children(|p| {
-            p.spawn_bundle(SpatialBundle::visible_identity())
+            p.spawn(SpatialBundle::VISIBLE_IDENTITY)
                 .with_children(|p| {
-                    p.spawn_bundle(PbrBundle {
+                    p.spawn(PbrBundle {
                         transform: Transform::from_xyz(1.5, 0.0, 0.0),
                         mesh: meshes.add(Mesh::from(shape::Cube { size: 0.5 })),
                         material: materials.add(Color::rgb(0.3, 0.9, 0.3).into()),

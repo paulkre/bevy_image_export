@@ -14,7 +14,7 @@ use bevy::{
     },
 };
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Resource)]
 pub struct ExportThreads {
     pub count: Arc<Mutex<u32>>,
 }

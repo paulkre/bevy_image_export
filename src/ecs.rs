@@ -101,7 +101,7 @@ pub fn extract_image_export_tasks(
     tasks.iter().for_each(|(entity, data, settings)| {
         commands
             .get_or_spawn(entity)
-            .insert_bundle((data.clone(), settings.clone()));
+            .insert((data.clone(), settings.clone()));
     });
 }
 
