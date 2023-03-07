@@ -11,11 +11,22 @@ readme = "README.md"
 repository = "https://github.com/paulkre/bevy_image_export"
 
 [dependencies]
-bevy = "0.10"
+bevy = { version = "0.10", default-features = false, features = [
+  "bevy_render",
+  "bevy_asset",
+] }
 futures = "0.3"
 futures-lite = "1"
 image = "0.24"
 wgpu = "0.15"
+
+[dev-dependencies]
+bevy = { version = "0.10", default-features = false, features = [
+  "bevy_sprite",
+  "bevy_winit",
+  "bevy_core_pipeline",
+  "bevy_pbr",
+] }
 
 [profile.dev]
 opt-level = 1
