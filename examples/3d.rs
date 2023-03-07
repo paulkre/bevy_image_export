@@ -13,11 +13,10 @@ fn main() {
             ..default()
         })
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
-                width: 1024.,
-                height: 1024.,
+            primary_window: Some(Window {
+                resolution: (1024., 1024.).into(),
                 ..default()
-            },
+            }),
             ..default()
         }))
         .add_plugin(export_plugin)
@@ -50,12 +49,12 @@ fn setup(
 
     commands
         .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Icosphere::default())),
+            mesh: meshes.add(Mesh::try_from(shape::Icosphere::default()).unwrap()),
             material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
             ..default()
         })
         .with_children(|p| {
-            p.spawn(SpatialBundle::VISIBLE_IDENTITY)
+            p.spawn(SpatialBundle::default())
                 .with_children(|p| {
                     p.spawn(PbrBundle {
                         transform: Transform::from_xyz(1.5, 0.0, 0.0),

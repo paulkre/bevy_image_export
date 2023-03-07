@@ -3,7 +3,7 @@
 [![Crates.io](https://img.shields.io/crates/v/bevy_image_export.svg)](https://crates.io/crates/bevy_image_export)
 [![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/paulkre/bevy_image_export/blob/main/LICENSE)
 
-A Bevy plugin enabling you to render image sequences.
+A Bevy plugin for rendering image sequences.
 
 ## Usage
 
@@ -21,19 +21,18 @@ fn main() {
             ..default()
         })
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
-                width: 1024.,
-                height: 1024.,
+            primary_window: Some(Window {
+                resolution: (1024., 1024.).into(),
                 ..default()
-            },
+            }),
             ..default()
         }))
         .add_plugin(export_plugin)
         // ...
         .run();
 
-    // This is optional but recommended.
-    // It blocks the main thread until all images have been exported.
+    // This line is optional but recommended.
+    // It blocks the main thread until all image files have been saved successfully.
     export_threads.finish();
 }
 
@@ -53,7 +52,7 @@ fn setup(
             parent
                 .spawn(Camera3dBundle::default())
                 .insert(ImageExportCamera {
-                    // The rendered frames will be saved to "./out/[#####].png".
+                    // Frames will be saved to "./out/[#####].png".
                     output_dir: "out",
                     extension: "png",
                 });
@@ -63,9 +62,9 @@ fn setup(
 }
 ```
 
-## Creating a MP4 file
+## Video file export
 
-With [FFmpeg](https://ffmpeg.org) installed, you can run the following command to convert your exported image sequence to a MP4 video file:
+With [FFmpeg](https://ffmpeg.org) installed, you can run the following command to convert your exported image sequence to an MP4 video file:
 
 ```bash
 ffmpeg -r 60 -i out/%05d.png -vcodec libx264 -crf 25 -pix_fmt yuv420p out.mp4

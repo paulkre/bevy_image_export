@@ -13,11 +13,10 @@ fn main() {
             ..default()
         })
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
-                width: 1024.,
-                height: 1024.,
+            primary_window: Some(Window {
+                resolution: (1024., 1024.).into(),
                 ..default()
-            },
+            }),
             ..default()
         }))
         .add_plugin(export_plugin)

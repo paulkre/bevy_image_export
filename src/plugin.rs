@@ -10,7 +10,7 @@ use bevy::{
     prelude::*,
     render::{
         camera::CameraUpdateSystem, main_graph::node::CAMERA_DRIVER, render_graph::RenderGraph,
-        RenderApp, RenderStage,
+        RenderApp, RenderSet,
     },
 };
 
@@ -35,23 +35,24 @@ pub struct ImageExportPlugin {
 
 impl Plugin for ImageExportPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(
-            CoreStage::PostUpdate,
-            setup_export_data.after(CameraUpdateSystem),
-        );
-        app.add_system_to_stage(CoreStage::PostUpdate, update_frame_id);
+        app.add_system(
+            setup_export_data
+                .in_base_set(CoreSet::PostUpdate)
+                .after(CameraUpdateSystem),
+        )
+        .add_system(update_frame_id.in_base_set(CoreSet::PostUpdate));
 
         let render_app = app.sub_app_mut(RenderApp);
 
         render_app.insert_resource(self.threads.clone());
 
-        render_app.add_system_to_stage(RenderStage::Extract, extract_image_export_tasks);
-
-        render_app.add_system_to_stage(RenderStage::Cleanup, export_image);
+        render_app
+            .add_system(extract_image_export_tasks.in_schedule(ExtractSchedule))
+            .add_system(export_image.in_set(RenderSet::RenderFlush));
 
         let mut graph = render_app.world.get_resource_mut::<RenderGraph>().unwrap();
 
         graph.add_node(NODE_NAME, ImageExportNode::default());
-        graph.add_node_edge(CAMERA_DRIVER, NODE_NAME).unwrap();
+        graph.add_node_edge(CAMERA_DRIVER, NODE_NAME);
     }
 }

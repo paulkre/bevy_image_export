@@ -51,7 +51,7 @@ impl bevy::render::render_graph::Node for ImageExportNode {
                         * format.block_size as usize,
                 );
 
-                render_context.command_encoder.copy_texture_to_buffer(
+                render_context.command_encoder().copy_texture_to_buffer(
                     image.texture.as_image_copy(),
                     ImageCopyBuffer {
                         buffer: &output_buffer,

@@ -79,6 +79,7 @@ pub fn setup_export_data(
                 usage: TextureUsages::COPY_DST
                     | TextureUsages::COPY_SRC
                     | TextureUsages::RENDER_ATTACHMENT,
+                view_formats: &[],
             },
             ..default()
         };
