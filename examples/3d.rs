@@ -81,7 +81,7 @@ impl Default for Spinning {
 
 fn spin(mut query: Query<(&mut Transform, &Spinning)>) {
     let angle = TAU * (1.0 / 60.0);
-    query.iter_mut().for_each(|(mut transform, spin_settings)| {
+    for (mut transform, spin_settings) in query.iter_mut() {
         transform.rotate_y(-angle * spin_settings.speed);
-    });
+    }
 }

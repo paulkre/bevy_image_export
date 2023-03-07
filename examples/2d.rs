@@ -61,7 +61,7 @@ fn update(
             .insert(ImageExportCamera::default());
     }
 
-    query.iter_mut().for_each(|mut transform| {
+    for mut transform in query.iter_mut() {
         transform.translation = Vec3::Y * 384. * (time * PI).sin();
-    });
+    }
 }

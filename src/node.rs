@@ -29,46 +29,42 @@ impl bevy::render::render_graph::Node for ImageExportNode {
         render_context: &mut bevy::render::renderer::RenderContext,
         world: &World,
     ) -> Result<(), bevy::render::render_graph::NodeRunError> {
-        self.tasks.iter().for_each(
-            |ImageExportTask {
-                 render_target,
-                 output_buffer,
-                 size,
-                 ..
-             }| {
-                let image = world
-                    .get_resource::<RenderAssets<Image>>()
-                    .unwrap()
-                    .get(&render_target)
-                    .unwrap();
+        for ImageExportTask {
+            render_target,
+            output_buffer,
+            size,
+            ..
+        } in self.tasks.iter()
+        {
+            let image = world
+                .get_resource::<RenderAssets<Image>>()
+                .unwrap()
+                .get(&render_target)
+                .unwrap();
 
-                let format = image.texture_format.describe();
+            let format = image.texture_format.describe();
 
-                let padded_bytes_per_row = RenderDevice::align_copy_bytes_per_row(
-                    (size.x as usize / format.block_dimensions.0 as usize)
-                        * format.block_size as usize,
-                );
+            let padded_bytes_per_row = RenderDevice::align_copy_bytes_per_row(
+                (size.x as usize / format.block_dimensions.0 as usize) * format.block_size as usize,
+            );
 
-                render_context.command_encoder().copy_texture_to_buffer(
-                    image.texture.as_image_copy(),
-                    ImageCopyBuffer {
-                        buffer: &output_buffer,
-                        layout: ImageDataLayout {
-                            offset: 0,
-                            bytes_per_row: Some(
-                                NonZeroU32::new(padded_bytes_per_row as u32).unwrap(),
-                            ),
-                            rows_per_image: Some(NonZeroU32::new(size.y).unwrap()),
-                        },
+            render_context.command_encoder().copy_texture_to_buffer(
+                image.texture.as_image_copy(),
+                ImageCopyBuffer {
+                    buffer: &output_buffer,
+                    layout: ImageDataLayout {
+                        offset: 0,
+                        bytes_per_row: Some(NonZeroU32::new(padded_bytes_per_row as u32).unwrap()),
+                        rows_per_image: Some(NonZeroU32::new(size.y).unwrap()),
                     },
-                    Extent3d {
-                        width: size.x,
-                        height: size.y,
-                        ..default()
-                    },
-                );
-            },
-        );
+                },
+                Extent3d {
+                    width: size.x,
+                    height: size.y,
+                    ..default()
+                },
+            );
+        }
 
         Ok(())
     }

@@ -67,7 +67,7 @@ pub fn setup_export_data(
     mut query: Query<(Entity, &mut Camera), (With<ImageExportCamera>, Without<ImageExportTask>)>,
     device: Res<RenderDevice>,
 ) {
-    query.iter_mut().for_each(|(entity, mut camera)| {
+    for (entity, mut camera) in query.iter_mut() {
         let size = camera
             .physical_target_size()
             .expect("Could not determine export resolution");
@@ -102,18 +102,18 @@ pub fn setup_export_data(
         commands
             .entity(entity)
             .insert(ImageExportTask::new(&device, image_handle, size));
-    });
+    }
 }
 
 pub fn extract_image_export_tasks(
     mut commands: Commands,
     tasks: Extract<Query<(Entity, &ImageExportTask, &ImageExportCamera)>>,
 ) {
-    tasks.iter().for_each(|(entity, data, settings)| {
+    for (entity, data, settings) in tasks.iter() {
         commands
             .get_or_spawn(entity)
             .insert((data.clone(), settings.clone()));
-    });
+    }
 }
 
 #[derive(Default, Clone, Resource)]
@@ -130,9 +130,9 @@ impl ExportThreads {
 }
 
 pub fn update_frame_id(mut tasks: Query<&mut ImageExportTask>) {
-    tasks.iter_mut().for_each(|mut task| {
+    for mut task in tasks.iter_mut() {
         task.frame_id = task.frame_id.wrapping_add(1);
-    });
+    }
 }
 
 pub fn export_image(
@@ -140,7 +140,7 @@ pub fn export_image(
     render_device: Res<RenderDevice>,
     export_threads: Res<ExportThreads>,
 ) {
-    tasks.iter().for_each(|(task, settings)| {
+    for (task, settings) in tasks.iter() {
         let data = {
             let slice = task.output_buffer.slice(..);
 
@@ -170,7 +170,7 @@ pub fn export_image(
             save_image_file(data, size, frame_id, settings);
             *export_threads.count.lock().unwrap() -= 1;
         });
-    });
+    }
 }
 
 fn save_image_file(data: Vec<u8>, size: UVec2, frame_id: u32, settings: ImageExportCamera) {
