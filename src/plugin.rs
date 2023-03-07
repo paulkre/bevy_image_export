@@ -83,7 +83,7 @@ pub fn setup_export_data(
                 label: None,
                 size: extent,
                 dimension: TextureDimension::D2,
-                format: TextureFormat::Bgra8UnormSrgb,
+                format: TextureFormat::Rgba8UnormSrgb,
                 mip_level_count: 1,
                 sample_count: 1,
                 usage: TextureUsages::COPY_DST
@@ -173,9 +173,7 @@ pub fn export_image(
     });
 }
 
-fn save_image_file(mut data: Vec<u8>, size: UVec2, frame_id: u32, settings: ImageExportCamera) {
-    bgra_to_rgba(&mut data);
-
+fn save_image_file(data: Vec<u8>, size: UVec2, frame_id: u32, settings: ImageExportCamera) {
     match std::fs::create_dir_all(settings.output_dir) {
         Err(_) => panic!("Output path could not be created"),
         _ => {}
@@ -188,14 +186,6 @@ fn save_image_file(mut data: Vec<u8>, size: UVec2, frame_id: u32, settings: Imag
 
     let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(size.x, size.y, data).unwrap();
     buffer.save(path).unwrap();
-}
-
-fn bgra_to_rgba(data: &mut Vec<u8>) {
-    for src in data.chunks_exact_mut(4) {
-        let b = src[0];
-        src[0] = src[2];
-        src[2] = b;
-    }
 }
 
 /// Plugin enabling the generation of image sequences.
