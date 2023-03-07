@@ -1,11 +1,9 @@
-use std::num::NonZeroU32;
-
+use crate::plugin::ImageExportTask;
 use bevy::{
     prelude::*,
     render::{render_asset::RenderAssets, render_resource::*, renderer::RenderDevice},
 };
-
-use super::ecs::ImageExportTask;
+use std::num::NonZeroU32;
 
 pub const NODE_NAME: &str = "image_export";
 
