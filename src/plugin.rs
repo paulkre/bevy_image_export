@@ -15,7 +15,10 @@ use bevy::{
 };
 use futures::channel::oneshot;
 use image::{ImageBuffer, Rgba};
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+};
 
 /// Any camera entity holding this component will render its view to an image sequence in the file system.
 #[derive(Component, Clone)]
@@ -118,12 +121,13 @@ pub fn extract_image_export_tasks(
 
 #[derive(Default, Clone, Resource)]
 pub struct ExportThreads {
-    pub count: Arc<Mutex<u32>>,
+    pub count: Arc<AtomicUsize>,
 }
 
 impl ExportThreads {
+    /// Blocks the main thread until all frames have been saved successfully.
     pub fn finish(&self) {
-        while *self.count.lock().unwrap() > 0 {
+        while self.count.load(Ordering::SeqCst) > 0 {
             std::thread::sleep(std::time::Duration::from_secs_f32(0.25));
         }
     }
@@ -165,10 +169,10 @@ pub fn export_image(
         let size = task.size;
         let settings = settings.clone();
 
-        *export_threads.count.lock().unwrap() += 1;
+        export_threads.count.fetch_add(1, Ordering::SeqCst);
         std::thread::spawn(move || {
             save_image_file(data, size, frame_id, settings);
-            *export_threads.count.lock().unwrap() -= 1;
+            export_threads.count.fetch_sub(1, Ordering::SeqCst);
         });
     }
 }
