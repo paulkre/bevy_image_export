@@ -19,6 +19,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
+use wgpu::Maintain;
 
 /// Any camera entity holding this component will render its view to an image sequence in the file system.
 #[derive(Component, Clone)]
@@ -155,7 +156,7 @@ pub fn export_image(
                     mapping_tx.send(res).unwrap();
                 });
 
-                render_device.poll(wgpu::Maintain::Wait);
+                render_device.poll(Maintain::Wait);
                 futures_lite::future::block_on(mapping_rx).unwrap().unwrap();
             }
 
