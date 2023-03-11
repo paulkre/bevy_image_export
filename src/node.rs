@@ -1,7 +1,12 @@
 use crate::plugin::ImageExportTask;
 use bevy::{
     prelude::*,
-    render::{render_asset::RenderAssets, render_resource::*, renderer::RenderDevice},
+    render::{
+        render_asset::RenderAssets,
+        render_graph::{Node, NodeRunError, RenderGraphContext},
+        render_resource::{Extent3d, ImageCopyBuffer, ImageDataLayout},
+        renderer::{RenderContext, RenderDevice},
+    },
 };
 use std::num::NonZeroU32;
 
@@ -9,13 +14,11 @@ pub const NODE_NAME: &str = "image_export";
 
 #[derive(Default)]
 pub struct ImageExportNode {
-    frame_id: u32,
     tasks: Vec<ImageExportTask>,
 }
 
-impl bevy::render::render_graph::Node for ImageExportNode {
+impl Node for ImageExportNode {
     fn update(&mut self, world: &mut World) {
-        self.frame_id = self.frame_id.wrapping_add(1);
         self.tasks = world
             .query::<&ImageExportTask>()
             .iter(world)
@@ -25,10 +28,10 @@ impl bevy::render::render_graph::Node for ImageExportNode {
 
     fn run(
         &self,
-        _graph: &mut bevy::render::render_graph::RenderGraphContext,
-        render_context: &mut bevy::render::renderer::RenderContext,
+        _graph: &mut RenderGraphContext,
+        render_context: &mut RenderContext,
         world: &World,
-    ) -> Result<(), bevy::render::render_graph::NodeRunError> {
+    ) -> Result<(), NodeRunError> {
         for ImageExportTask {
             render_target,
             output_buffer,
