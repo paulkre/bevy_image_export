@@ -1,8 +1,10 @@
 use super::node::{ImageExportNode, NODE_NAME};
 use bevy::{
+    ecs::query::QueryItem,
     prelude::*,
     render::{
-        camera::{CameraUpdateSystem, RenderTarget},
+        camera::RenderTarget,
+        extract_component::{ExtractComponent, ExtractComponentPlugin},
         main_graph::node::CAMERA_DRIVER,
         render_graph::RenderGraph,
         render_resource::{
@@ -10,7 +12,7 @@ use bevy::{
             TextureDimension, TextureFormat, TextureUsages,
         },
         renderer::RenderDevice,
-        Extract, RenderApp, RenderSet,
+        RenderApp, RenderSet,
     },
 };
 use futures::channel::oneshot;
@@ -44,8 +46,10 @@ pub struct ImageExportTask {
     pub render_target: Handle<Image>,
     pub output_buffer: Buffer,
     pub size: UVec2,
-    pub frame_id: u32,
 }
+
+#[derive(Component, Clone, Default, Deref, DerefMut)]
+pub struct ImageExportFrameId(u32);
 
 impl ImageExportTask {
     pub fn new(device: &RenderDevice, render_target: Handle<Image>, size: UVec2) -> Self {
@@ -60,12 +64,11 @@ impl ImageExportTask {
                 usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
                 mapped_at_creation: false,
             }),
-            frame_id: 1,
         }
     }
 }
 
-pub fn setup_export_data(
+pub fn setup_export_task(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
     mut query: Query<(Entity, &mut Camera), (With<ImageExportCamera>, Without<ImageExportTask>)>,
@@ -109,14 +112,17 @@ pub fn setup_export_data(
     }
 }
 
-pub fn extract_image_export_tasks(
-    mut commands: Commands,
-    tasks: Extract<Query<(Entity, &ImageExportTask, &ImageExportCamera)>>,
-) {
-    for (entity, data, settings) in tasks.iter() {
-        commands
-            .get_or_spawn(entity)
-            .insert((data.clone(), settings.clone()));
+impl ExtractComponent for ImageExportCamera {
+    type Query = (
+        &'static Self,
+        &'static ImageExportTask,
+        &'static ImageExportFrameId,
+    );
+    type Filter = ();
+    type Out = (Self, ImageExportTask, ImageExportFrameId);
+
+    fn extract_component((cam, task, id): QueryItem<'_, Self::Query>) -> Option<Self::Out> {
+        Some((cam.clone(), task.clone(), id.clone()))
     }
 }
 
@@ -134,18 +140,23 @@ impl ExportThreads {
     }
 }
 
-pub fn update_frame_id(mut tasks: Query<&mut ImageExportTask>) {
-    for mut task in tasks.iter_mut() {
-        task.frame_id = task.frame_id.wrapping_add(1);
+pub fn update_frame_id(
+    mut commands: Commands,
+    frame_ids: Query<(Entity, Option<&ImageExportFrameId>), With<ImageExportCamera>>,
+) {
+    for (entity, frame_id) in frame_ids.iter() {
+        let mut frame_id = frame_id.cloned().unwrap_or_default();
+        (*frame_id) = frame_id.wrapping_add(1);
+        commands.entity(entity).insert(frame_id);
     }
 }
 
 pub fn export_image(
-    tasks: Query<(&ImageExportTask, &ImageExportCamera)>,
+    tasks: Query<(&ImageExportTask, &ImageExportFrameId, &ImageExportCamera)>,
     render_device: Res<RenderDevice>,
     export_threads: Res<ExportThreads>,
 ) {
-    for (task, settings) in tasks.iter() {
+    for (task, frame_id, settings) in tasks.iter() {
         let data = {
             let slice = task.output_buffer.slice(..);
 
@@ -165,7 +176,7 @@ pub fn export_image(
 
         task.output_buffer.unmap();
 
-        let frame_id = task.frame_id;
+        let frame_id = **frame_id;
         let export_threads = export_threads.clone();
         let size = task.size;
         let settings = settings.clone();
@@ -179,10 +190,7 @@ pub fn export_image(
 }
 
 fn save_image_file(data: Vec<u8>, size: UVec2, frame_id: u32, settings: ImageExportCamera) {
-    match std::fs::create_dir_all(settings.output_dir) {
-        Err(_) => panic!("Output path could not be created"),
-        _ => {}
-    }
+    std::fs::create_dir_all(settings.output_dir).expect("Output path could not be created");
 
     let path = format!(
         "{}/{:05}.{}",
@@ -201,20 +209,15 @@ pub struct ImageExportPlugin {
 
 impl Plugin for ImageExportPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            setup_export_data
-                .in_base_set(CoreSet::PostUpdate)
-                .after(CameraUpdateSystem),
-        )
-        .add_system(update_frame_id.in_base_set(CoreSet::PostUpdate));
+        app.add_plugin(ExtractComponentPlugin::<ImageExportCamera>::default())
+            .add_system(setup_export_task.in_base_set(CoreSet::PostUpdate))
+            .add_system(update_frame_id.in_base_set(CoreSet::PostUpdate));
 
         let render_app = app.sub_app_mut(RenderApp);
 
         render_app.insert_resource(self.threads.clone());
 
-        render_app
-            .add_system(extract_image_export_tasks.in_schedule(ExtractSchedule))
-            .add_system(export_image.in_set(RenderSet::RenderFlush));
+        render_app.add_system(export_image.in_set(RenderSet::RenderFlush));
 
         let mut graph = render_app.world.get_resource_mut::<RenderGraph>().unwrap();
 
