@@ -14,7 +14,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                resolution: (1024., 1024.).into(),
+                resolution: (768., 768.).into(),
                 ..default()
             }),
             ..default()
