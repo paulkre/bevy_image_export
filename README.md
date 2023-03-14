@@ -55,6 +55,7 @@ fn setup(
                     // Frames will be saved to "./out/[#####].png".
                     output_dir: "out",
                     extension: "png",
+                    ..default()
                 });
         });
 

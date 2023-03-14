@@ -30,6 +30,8 @@ pub struct ImageExportCamera {
     pub output_dir: &'static str,
     /// The image file extension. Supported extensions are listed [here](https://github.com/image-rs/image#supported-image-formats).
     pub extension: &'static str,
+    /// The resolution of the output image. If none, viewport resolution is used.
+    pub resolution: Option<UVec2>,
 }
 
 impl Default for ImageExportCamera {
@@ -37,6 +39,7 @@ impl Default for ImageExportCamera {
         Self {
             output_dir: "out",
             extension: "png",
+            resolution: None,
         }
     }
 }
@@ -71,13 +74,15 @@ impl ImageExportTask {
 pub fn setup_export_task(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
-    mut query: Query<(Entity, &mut Camera), (With<ImageExportCamera>, Without<ImageExportTask>)>,
+    mut query: Query<(Entity, &ImageExportCamera, &mut Camera), Without<ImageExportTask>>,
     device: Res<RenderDevice>,
 ) {
-    for (entity, mut camera) in query.iter_mut() {
-        let size = camera
-            .physical_target_size()
-            .expect("Could not determine export resolution");
+    for (entity, settings, mut camera) in query.iter_mut() {
+        let size = settings.resolution.unwrap_or_else(|| {
+            camera
+                .physical_target_size()
+                .expect("Could not determine export resolution")
+        });
 
         let extent = Extent3d {
             width: size.x,
