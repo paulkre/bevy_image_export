@@ -3,7 +3,7 @@ use bevy::{
     ecs::query::QueryItem,
     prelude::*,
     render::{
-        camera::RenderTarget,
+        camera::{CameraUpdateSystem, RenderTarget, Viewport},
         extract_component::{ExtractComponent, ExtractComponentPlugin},
         main_graph::node::CAMERA_DRIVER,
         render_graph::RenderGraph,
@@ -78,15 +78,15 @@ pub fn setup_export_task(
     device: Res<RenderDevice>,
 ) {
     for (entity, settings, mut camera) in query.iter_mut() {
-        let size = settings.resolution.unwrap_or_else(|| {
+        let resolution = settings.resolution.unwrap_or_else(|| {
             camera
                 .physical_target_size()
                 .expect("Could not determine export resolution")
         });
 
         let extent = Extent3d {
-            width: size.x,
-            height: size.y,
+            width: resolution.x,
+            height: resolution.y,
             ..default()
         };
 
@@ -110,10 +110,14 @@ pub fn setup_export_task(
         let image_handle = images.add(image);
 
         camera.target = RenderTarget::Image(image_handle.clone());
+        camera.viewport = Some(Viewport {
+            physical_size: resolution,
+            ..default()
+        });
 
         commands
             .entity(entity)
-            .insert(ImageExportTask::new(&device, image_handle, size));
+            .insert(ImageExportTask::new(&device, image_handle, resolution));
     }
 }
 
@@ -215,14 +219,19 @@ pub struct ImageExportPlugin {
 impl Plugin for ImageExportPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(ExtractComponentPlugin::<ImageExportCamera>::default())
-            .add_system(setup_export_task.in_base_set(CoreSet::PostUpdate))
-            .add_system(update_frame_id.in_base_set(CoreSet::PostUpdate));
+            .add_systems(
+                (
+                    setup_export_task.before(CameraUpdateSystem),
+                    update_frame_id,
+                )
+                    .in_base_set(CoreSet::PostUpdate),
+            );
 
         let render_app = app.sub_app_mut(RenderApp);
 
-        render_app.insert_resource(self.threads.clone());
-
-        render_app.add_system(export_image.in_set(RenderSet::RenderFlush));
+        render_app
+            .insert_resource(self.threads.clone())
+            .add_system(export_image.in_set(RenderSet::RenderFlush));
 
         let mut graph = render_app.world.get_resource_mut::<RenderGraph>().unwrap();
 
