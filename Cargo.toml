@@ -1,6 +1,6 @@
 [package]
 name = "bevy_image_export"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2021"
 categories = ["graphics", "rendering"]
 keywords = ["creative", "coding", "sketching"]
