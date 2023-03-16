@@ -35,7 +35,7 @@ impl Node for ImageExportNode {
         for ImageExportTask {
             render_target,
             output_buffer,
-            size,
+            resolution,
             ..
         } in self.tasks.iter()
         {
@@ -48,7 +48,8 @@ impl Node for ImageExportNode {
             let format = image.texture_format.describe();
 
             let padded_bytes_per_row = RenderDevice::align_copy_bytes_per_row(
-                (size.x as usize / format.block_dimensions.0 as usize) * format.block_size as usize,
+                (resolution.x as usize / format.block_dimensions.0 as usize)
+                    * format.block_size as usize,
             );
 
             render_context.command_encoder().copy_texture_to_buffer(
@@ -58,12 +59,12 @@ impl Node for ImageExportNode {
                     layout: ImageDataLayout {
                         offset: 0,
                         bytes_per_row: Some(NonZeroU32::new(padded_bytes_per_row as u32).unwrap()),
-                        rows_per_image: Some(NonZeroU32::new(size.y).unwrap()),
+                        rows_per_image: None,
                     },
                 },
                 Extent3d {
-                    width: size.x,
-                    height: size.y,
+                    width: resolution.x,
+                    height: resolution.y,
                     ..default()
                 },
             );

@@ -16,7 +16,7 @@ use bevy::{
     },
 };
 use futures::channel::oneshot;
-use image::{ImageBuffer, Rgba};
+use image::{ColorType, ImageBuffer, Rgba};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -44,31 +44,15 @@ impl Default for ImageExportCamera {
     }
 }
 
+#[derive(Component, Clone, Default, Deref, DerefMut)]
+pub struct ImageExportFrameId(u32);
+
 #[derive(Component, Clone)]
 pub struct ImageExportTask {
     pub render_target: Handle<Image>,
     pub output_buffer: Buffer,
-    pub size: UVec2,
-}
-
-#[derive(Component, Clone, Default, Deref, DerefMut)]
-pub struct ImageExportFrameId(u32);
-
-impl ImageExportTask {
-    pub fn new(device: &RenderDevice, render_target: Handle<Image>, size: UVec2) -> Self {
-        let padded_bytes_per_row = RenderDevice::align_copy_bytes_per_row((size.x) as usize) * 4;
-
-        Self {
-            render_target,
-            size,
-            output_buffer: device.create_buffer(&BufferDescriptor {
-                label: Some("output_buffer"),
-                size: padded_bytes_per_row as u64 * size.y as u64,
-                usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
-                mapped_at_creation: false,
-            }),
-        }
-    }
+    pub resolution: UVec2,
+    pub original_width: u32,
 }
 
 pub fn setup_export_task(
@@ -78,11 +62,21 @@ pub fn setup_export_task(
     device: Res<RenderDevice>,
 ) {
     for (entity, settings, mut camera) in query.iter_mut() {
-        let resolution = settings.resolution.unwrap_or_else(|| {
+        let mut resolution = settings.resolution.unwrap_or_else(|| {
             camera
                 .physical_target_size()
                 .expect("Could not determine export resolution")
         });
+
+        camera.viewport = Some(Viewport {
+            physical_size: resolution,
+            ..default()
+        });
+
+        // Texture width has to be a multiple of 256 because it is
+        // required in `wgpu::CommandEncoder::copy_texture_to_buffer()`.
+        let original_width = resolution.x;
+        resolution.x = 256 * (original_width as f32 / 256.0).ceil() as u32;
 
         let extent = Extent3d {
             width: resolution.x,
@@ -110,14 +104,19 @@ pub fn setup_export_task(
         let image_handle = images.add(image);
 
         camera.target = RenderTarget::Image(image_handle.clone());
-        camera.viewport = Some(Viewport {
-            physical_size: resolution,
-            ..default()
-        });
 
-        commands
-            .entity(entity)
-            .insert(ImageExportTask::new(&device, image_handle, resolution));
+        commands.entity(entity).insert(ImageExportTask {
+            render_target: image_handle,
+            resolution,
+            original_width,
+            output_buffer: device.create_buffer(&BufferDescriptor {
+                label: Some("image_export_buffer"),
+                size: (RenderDevice::align_copy_bytes_per_row((resolution.x) as usize) * 4) as u64
+                    * resolution.y as u64,
+                usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
+                mapped_at_creation: false,
+            }),
+        });
     }
 }
 
@@ -149,7 +148,7 @@ impl ExportThreads {
     }
 }
 
-pub fn update_frame_id(
+fn update_frame_id(
     mut commands: Commands,
     frame_ids: Query<(Entity, Option<&ImageExportFrameId>), With<ImageExportCamera>>,
 ) {
@@ -160,7 +159,7 @@ pub fn update_frame_id(
     }
 }
 
-pub fn export_image(
+fn export_image(
     tasks: Query<(&ImageExportTask, &ImageExportFrameId, &ImageExportCamera)>,
     render_device: Res<RenderDevice>,
     export_threads: Res<ExportThreads>,
@@ -187,26 +186,47 @@ pub fn export_image(
 
         let frame_id = **frame_id;
         let export_threads = export_threads.clone();
-        let size = task.size;
+        let resolution = task.resolution;
+        let original_width = task.original_width;
         let settings = settings.clone();
 
         export_threads.count.fetch_add(1, Ordering::SeqCst);
         std::thread::spawn(move || {
-            save_image_file(data, size, frame_id, settings);
+            save_image_file(data, resolution, original_width, frame_id, settings);
             export_threads.count.fetch_sub(1, Ordering::SeqCst);
         });
     }
 }
 
-fn save_image_file(data: Vec<u8>, size: UVec2, frame_id: u32, settings: ImageExportCamera) {
+fn save_image_file(
+    mut data: Vec<u8>,
+    resolution: UVec2,
+    original_width: u32,
+    frame_id: u32,
+    settings: ImageExportCamera,
+) {
     std::fs::create_dir_all(settings.output_dir).expect("Output path could not be created");
+
+    if resolution.x != original_width {
+        data = {
+            let bpp = ColorType::Rgba8.bytes_per_pixel() as usize;
+            let ow = original_width as usize;
+            let mut corrected_data = Vec::<u8>::with_capacity(bpp * ow * resolution.y as usize);
+
+            for chunk in data.chunks(bpp * resolution.x as usize) {
+                corrected_data.extend_from_slice(&chunk[..bpp * ow]);
+            }
+
+            corrected_data
+        };
+    }
 
     let path = format!(
         "{}/{:05}.{}",
         settings.output_dir, frame_id, settings.extension
     );
 
-    let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(size.x, size.y, data).unwrap();
+    let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(original_width, resolution.y, data).unwrap();
     buffer.save(path).unwrap();
 }
 
