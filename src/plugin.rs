@@ -1,4 +1,7 @@
-use super::node::{ImageExportNode, NODE_NAME};
+use crate::{
+    node::{ImageExportNode, NODE_NAME},
+    saving::{crop_image_width, save_image_file, SaveImageDescriptor},
+};
 use bevy::{
     ecs::query::QueryItem,
     prelude::*,
@@ -16,7 +19,6 @@ use bevy::{
     },
 };
 use futures::channel::oneshot;
-use image::{ColorType, ImageBuffer, Rgba};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -159,37 +161,13 @@ fn update_frame_id(
     }
 }
 
-fn crop_image_width(data: &mut Vec<u8>, resolution: UVec2, target_width: u32) {
-    let bpp = ColorType::Rgba8.bytes_per_pixel() as usize;
-    let ow = target_width as usize;
-    let mut corrected_data = Vec::<u8>::with_capacity(bpp * ow * resolution.y as usize);
-
-    for chunk in data.chunks(bpp * resolution.x as usize) {
-        corrected_data.extend_from_slice(&chunk[..bpp * ow]);
-    }
-
-    *data = corrected_data;
-}
-
-fn save_image_file(data: Vec<u8>, resolution: UVec2, frame_id: u32, settings: ImageExportCamera) {
-    std::fs::create_dir_all(settings.output_dir).expect("Output path could not be created");
-
-    let path = format!(
-        "{}/{:05}.{}",
-        settings.output_dir, frame_id, settings.extension
-    );
-
-    let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(resolution.x, resolution.y, data).unwrap();
-    buffer.save(path).unwrap();
-}
-
 fn export_image(
     tasks: Query<(&ImageExportTask, &ImageExportFrameId, &ImageExportCamera)>,
     render_device: Res<RenderDevice>,
     export_threads: Res<ExportThreads>,
 ) {
     for (task, frame_id, settings) in tasks.iter() {
-        let mut data = {
+        let data = {
             let slice = task.output_buffer.slice(..);
 
             {
@@ -208,11 +186,16 @@ fn export_image(
 
         task.output_buffer.unmap();
 
-        let frame_id = **frame_id;
         let export_threads = export_threads.clone();
-        let resolution = task.resolution;
         let original_width = task.original_width;
-        let settings = settings.clone();
+        let resolution = task.resolution;
+        let mut save_image_desc = SaveImageDescriptor {
+            data,
+            frame_id: **frame_id,
+            resolution: (task.original_width, task.resolution.y).into(),
+            output_dir: settings.output_dir,
+            extension: settings.extension,
+        };
 
         export_threads.count.fetch_add(1, Ordering::SeqCst);
         std::thread::spawn(move || {
@@ -221,15 +204,10 @@ fn export_image(
             // it to be a multiple of 256. If that is the case, it is necessary
             // to crop the image data before saving.
             if resolution.x != original_width {
-                crop_image_width(&mut data, resolution, original_width);
+                crop_image_width(&mut save_image_desc.data, resolution, original_width);
             }
 
-            save_image_file(
-                data,
-                (original_width, resolution.y).into(),
-                frame_id,
-                settings,
-            );
+            save_image_file(save_image_desc);
 
             export_threads.count.fetch_sub(1, Ordering::SeqCst);
         });
