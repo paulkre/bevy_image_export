@@ -73,8 +73,8 @@ pub fn setup_export_task(
             ..default()
         });
 
-        // Texture width has to be a multiple of 256 because it is
-        // required in `wgpu::CommandEncoder::copy_texture_to_buffer()`.
+        // Texture width has to be a multiple of 256. This is a requirement
+        // of `wgpu::CommandEncoder::copy_texture_to_buffer()`.
         let original_width = resolution.x;
         resolution.x = 256 * (original_width as f32 / 256.0).ceil() as u32;
 
@@ -159,13 +159,37 @@ fn update_frame_id(
     }
 }
 
+fn crop_image_width(data: &mut Vec<u8>, resolution: UVec2, target_width: u32) {
+    let bpp = ColorType::Rgba8.bytes_per_pixel() as usize;
+    let ow = target_width as usize;
+    let mut corrected_data = Vec::<u8>::with_capacity(bpp * ow * resolution.y as usize);
+
+    for chunk in data.chunks(bpp * resolution.x as usize) {
+        corrected_data.extend_from_slice(&chunk[..bpp * ow]);
+    }
+
+    *data = corrected_data;
+}
+
+fn save_image_file(data: Vec<u8>, resolution: UVec2, frame_id: u32, settings: ImageExportCamera) {
+    std::fs::create_dir_all(settings.output_dir).expect("Output path could not be created");
+
+    let path = format!(
+        "{}/{:05}.{}",
+        settings.output_dir, frame_id, settings.extension
+    );
+
+    let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(resolution.x, resolution.y, data).unwrap();
+    buffer.save(path).unwrap();
+}
+
 fn export_image(
     tasks: Query<(&ImageExportTask, &ImageExportFrameId, &ImageExportCamera)>,
     render_device: Res<RenderDevice>,
     export_threads: Res<ExportThreads>,
 ) {
     for (task, frame_id, settings) in tasks.iter() {
-        let data = {
+        let mut data = {
             let slice = task.output_buffer.slice(..);
 
             {
@@ -192,42 +216,24 @@ fn export_image(
 
         export_threads.count.fetch_add(1, Ordering::SeqCst);
         std::thread::spawn(move || {
-            save_image_file(data, resolution, original_width, frame_id, settings);
+            // The texture's width might be higher than the target image width,
+            // because `wgpu::CommandEncoder::copy_texture_to_buffer()` requires
+            // it to be a multiple of 256. If that is the case, it is necessary
+            // to crop the image data before saving.
+            if resolution.x != original_width {
+                crop_image_width(&mut data, resolution, original_width);
+            }
+
+            save_image_file(
+                data,
+                (original_width, resolution.y).into(),
+                frame_id,
+                settings,
+            );
+
             export_threads.count.fetch_sub(1, Ordering::SeqCst);
         });
     }
-}
-
-fn save_image_file(
-    mut data: Vec<u8>,
-    resolution: UVec2,
-    original_width: u32,
-    frame_id: u32,
-    settings: ImageExportCamera,
-) {
-    std::fs::create_dir_all(settings.output_dir).expect("Output path could not be created");
-
-    if resolution.x != original_width {
-        data = {
-            let bpp = ColorType::Rgba8.bytes_per_pixel() as usize;
-            let ow = original_width as usize;
-            let mut corrected_data = Vec::<u8>::with_capacity(bpp * ow * resolution.y as usize);
-
-            for chunk in data.chunks(bpp * resolution.x as usize) {
-                corrected_data.extend_from_slice(&chunk[..bpp * ow]);
-            }
-
-            corrected_data
-        };
-    }
-
-    let path = format!(
-        "{}/{:05}.{}",
-        settings.output_dir, frame_id, settings.extension
-    );
-
-    let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(original_width, resolution.y, data).unwrap();
-    buffer.save(path).unwrap();
 }
 
 /// Plugin enabling the generation of image sequences.
