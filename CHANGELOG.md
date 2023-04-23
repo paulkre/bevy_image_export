@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.3](https://github.com/paulkre/bevy_image_export/compare/v0.5.2...v0.5.3) (2023-04-23)
+
+### Bug Fixes
+
+- Improved ECS structure. Added a custom ECS system set to ensure correct impact of plugin's setup system on app's world.
+- Fixed examples run on screens with high resolutions.
+- Added information about compatability with Bevy to readme.
+- Added Apache license.
+- Added changelog.
+
 ## [0.5.2](https://github.com/paulkre/bevy_image_export/compare/v0.5.1...v0.5.2) (2023-03-16)
 
 ### Bug Fixes
@@ -84,5 +94,4 @@ All notable changes to this project will be documented in this file.
 
 ## 0.1.0 (2022-09-07)
 
-This is the initial release of the plugin. It allows the user to add the `ImageExportCamera` component to a camera entity to turn that camera into a *recorder*, that saves every frame as an image file on disk.  
-
+This is the initial release of the plugin. It allows the user to add the `ImageExportCamera` component to a camera entity to turn that camera into a _recorder_, that saves every frame as an image file on disk.
