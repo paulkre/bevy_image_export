@@ -15,10 +15,15 @@ bevy = { version = "0.10", default-features = false, features = [
   "bevy_render",
   "bevy_asset",
 ] }
+image = { version = "0.24", default-features = false }
 futures = "0.3"
 futures-lite = "1"
-image = "0.24"
 wgpu = "0.15"
+
+[features]
+default = ["png"]
+png = ["image/png"]
+jpeg = ["image/jpeg"]
 
 [dev-dependencies]
 bevy = { version = "0.10", default-features = false, features = [

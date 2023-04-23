@@ -1,5 +1,5 @@
 use bevy::prelude::UVec2;
-use image::{ColorType, ImageBuffer, Rgba};
+use image::{error::UnsupportedErrorKind, ColorType, ImageBuffer, ImageError, Rgba};
 
 pub struct SaveImageDescriptor<'a> {
     pub data: Vec<u8>,
@@ -20,7 +20,15 @@ pub fn save_image_file(desc: SaveImageDescriptor) {
     let buffer =
         ImageBuffer::<Rgba<u8>, _>::from_raw(desc.resolution.x, desc.resolution.y, desc.data)
             .unwrap();
-    buffer.save(path).unwrap();
+
+    match buffer.save(path) {
+        Err(ImageError::Unsupported(err)) => {
+            if let UnsupportedErrorKind::Format(hint) = err.kind() {
+                println!("image format {} is not supported", hint);
+            }
+        }
+        _ => {}
+    }
 }
 
 pub fn crop_image_width(data: &mut Vec<u8>, resolution: UVec2, target_width: u32) {
