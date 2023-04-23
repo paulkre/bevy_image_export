@@ -1,6 +1,6 @@
 use std::f32::consts::TAU;
 
-use bevy::{prelude::*, winit::WinitSettings};
+use bevy::{prelude::*, window::WindowResolution, winit::WinitSettings};
 use bevy_image_export::{ImageExportCamera, ImageExportPlugin};
 
 fn main() {
@@ -14,7 +14,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                resolution: (768., 768.).into(),
+                resolution: WindowResolution::new(768.0, 768.0).with_scale_factor_override(1.0),
                 ..default()
             }),
             ..default()
