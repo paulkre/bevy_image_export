@@ -5,6 +5,14 @@
 
 A Bevy plugin for rendering image sequences.
 
+## Compatability
+
+| Bevy Version | Crate Version |
+| - | - |
+| `0.10` | `latest` |
+| `0.9` | `0.3` |
+| `0.8` | `0.2` |
+
 ## Usage
 
 ```rust
