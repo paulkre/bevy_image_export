@@ -235,7 +235,7 @@ impl Plugin for ImageExportPlugin {
 
         render_app
             .insert_resource(self.threads.clone())
-            .add_system(export_image.in_set(RenderSet::RenderFlush));
+            .add_system(export_image.after(RenderSet::Render));
 
         let mut graph = render_app.world.get_resource_mut::<RenderGraph>().unwrap();
 
