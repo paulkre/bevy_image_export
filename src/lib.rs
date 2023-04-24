@@ -1,5 +1,7 @@
 mod node;
 mod plugin;
-mod saving;
 
-pub use plugin::{ImageExportCamera, ImageExportPlugin, ImageExportSystems};
+pub use plugin::{
+    GpuImageExporterSource, ImageExportPlugin, ImageExportSystems, ImageExporterBundle,
+    ImageExporterSettings, ImageExporterSource,
+};

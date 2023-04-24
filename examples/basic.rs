@@ -1,23 +1,9 @@
-# Bevy Image Export
-
-[![Crates.io](https://img.shields.io/crates/v/bevy_image_export.svg)](https://crates.io/crates/bevy_image_export)
-[![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/paulkre/bevy_image_export/blob/main/LICENSE)
-
-A Bevy plugin for rendering image sequences.
-
-## Compatability
-
-| Bevy Version | Crate Version |
-| ------------ | ------------- |
-| `0.10`       | `0.4`, `0.5`  |
-| `0.9`        | `0.3`         |
-| `0.8`        | `0.1`, `0.2`  |
-
-## Usage
-
-```rust
-use bevy::{prelude::*, winit::WinitSettings};
+use bevy::{
+    prelude::*, render::camera::RenderTarget, window::WindowResolution, winit::WinitSettings,
+};
 use bevy_image_export::{ImageExportPlugin, ImageExporterBundle, ImageExporterSource};
+use std::f32::consts::PI;
+use wgpu::{Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages};
 
 fn main() {
     let export_plugin = ImageExportPlugin::default();
@@ -30,26 +16,30 @@ fn main() {
         })
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                resolution: (768.0, 768.0).into(),
+                resolution: WindowResolution::new(768.0, 768.0).with_scale_factor_override(1.0),
                 ..default()
             }),
             ..default()
         }))
         .add_plugin(export_plugin)
-        // ...
+        .insert_resource(AmbientLight {
+            color: Color::WHITE,
+            brightness: 1.0,
+        })
+        .add_startup_system(setup)
+        .add_system(update)
         .run();
 
-    // This line is optional but recommended.
-    // It blocks the main thread until all image files have been saved successfully.
     export_threads.finish();
 }
 
 fn setup(
     mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     mut images: ResMut<Assets<Image>>,
     mut exporter_sources: ResMut<Assets<ImageExporterSource>>,
 ) {
-    // Create an output texture.
     let output_texture_handle = {
         let size = Extent3d {
             width: 768,
@@ -78,13 +68,12 @@ fn setup(
 
     commands
         .spawn(Camera3dBundle {
-            transform: Transform::from_translation(5.0 * Vec3::Z),
+            transform: Transform::from_translation(4.2 * Vec3::Z),
             ..default()
         })
         .with_children(|parent| {
             parent.spawn(Camera3dBundle {
                 camera: Camera {
-                    // Connect the output texture to a camera as a RenderTarget.
                     target: RenderTarget::Image(output_texture_handle.clone()),
                     ..default()
                 },
@@ -92,24 +81,27 @@ fn setup(
             });
         });
 
-    // Spawn the ImageExporterBundle to initiate the export of the output texture.
     commands.spawn(ImageExporterBundle {
         source: exporter_sources.add(output_texture_handle.into()),
-        settings: ImageExporterSettings {
-            // Frames will be saved to "./out/[#####].png".
-            output_dir: "out".into(),
-            extension: "png".into(),
-        },
+        ..default()
     });
 
-    // ...
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Mesh::try_from(shape::Cube::default()).unwrap()),
+            material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
+            ..default()
+        },
+        Moving,
+    ));
 }
-```
 
-## Video file export
-
-With [FFmpeg](https://ffmpeg.org) installed, you can run the following command to convert your exported image sequence to an MP4 video file:
-
-```bash
-ffmpeg -r 60 -i out/%05d.png -vcodec libx264 -crf 25 -pix_fmt yuv420p out.mp4
-```
+#[derive(Component)]
+struct Moving;
+fn update(mut transforms: Query<&mut Transform, With<Moving>>, mut frame: Local<u32>) {
+    let theta = *frame as f32 * 0.25 * PI;
+    *frame += 1;
+    for mut transform in &mut transforms {
+        transform.translation = Vec3::new(theta.sin(), theta.cos(), 0.0);
+    }
+}
