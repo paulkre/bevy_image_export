@@ -9,7 +9,7 @@ use bevy::{
     window::WindowResolution,
     winit::WinitSettings,
 };
-use bevy_image_export::{ImageExportPlugin, ImageExporterBundle, ImageExporterSource};
+use bevy_image_export::{ImageExportPlugin, ImageExportSource, ImageExportBundle};
 use std::f32::consts::PI;
 
 fn main() {
@@ -45,7 +45,7 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut images: ResMut<Assets<Image>>,
-    mut exporter_sources: ResMut<Assets<ImageExporterSource>>,
+    mut export_sources: ResMut<Assets<ImageExportSource>>,
 ) {
     let output_texture_handle = {
         let size = Extent3d {
@@ -88,8 +88,8 @@ fn setup(
             });
         });
 
-    commands.spawn(ImageExporterBundle {
-        source: exporter_sources.add(output_texture_handle.into()),
+    commands.spawn(ImageExportBundle {
+        source: export_sources.add(output_texture_handle.into()),
         ..default()
     });
 

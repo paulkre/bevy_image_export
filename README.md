@@ -17,7 +17,7 @@ A Bevy plugin for rendering image sequences.
 
 ```rust
 use bevy::{prelude::*, winit::WinitSettings};
-use bevy_image_export::{ImageExportPlugin, ImageExporterBundle, ImageExporterSource};
+use bevy_image_export::{ImageExportPlugin, ImageExportBundle, ImageExportSource};
 
 fn main() {
     let export_plugin = ImageExportPlugin::default();
@@ -47,7 +47,7 @@ fn main() {
 fn setup(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
-    mut exporter_sources: ResMut<Assets<ImageExporterSource>>,
+    mut export_sources: ResMut<Assets<ImageExportSource>>,
 ) {
     // Create an output texture.
     let output_texture_handle = {
@@ -92,10 +92,10 @@ fn setup(
             });
         });
 
-    // Spawn the ImageExporterBundle to initiate the export of the output texture.
-    commands.spawn(ImageExporterBundle {
-        source: exporter_sources.add(output_texture_handle.into()),
-        settings: ImageExporterSettings {
+    // Spawn the ImageExportBundle to initiate the export of the output texture.
+    commands.spawn(ImageExportBundle {
+        source: export_sources.add(output_texture_handle.into()),
+        settings: ImageExportSettings {
             // Frames will be saved to "./out/[#####].png".
             output_dir: "out".into(),
             extension: "png".into(),

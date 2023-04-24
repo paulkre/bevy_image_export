@@ -1,4 +1,4 @@
-use crate::ImageExporterSource;
+use crate::ImageExportSource;
 use bevy::{
     prelude::*,
     render::{
@@ -20,10 +20,7 @@ impl Node for ImageExportNode {
         render_context: &mut RenderContext,
         world: &World,
     ) -> Result<(), NodeRunError> {
-        for source in world
-            .resource::<RenderAssets<ImageExporterSource>>()
-            .values()
-        {
+        for source in world.resource::<RenderAssets<ImageExportSource>>().values() {
             if let Some(gpu_image) = world
                 .resource::<RenderAssets<Image>>()
                 .get(&source.source_handle)
