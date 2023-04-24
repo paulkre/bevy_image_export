@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0](https://github.com/paulkre/bevy_image_export/compare/v0.5.3...v0.6.0) (2023-04-24)
+
+### Breaking Changes
+
+The plugin's user facing API was reworked, so that it is more closely aligned to Bevy's core APIs. The concept of exporting image sequences is no longer based on camera components. It is solely based on Bevy `Image` assets (which can be used as render targets). `ImageExportCamera` was removed in favour of `ImageExporterBundle`. Image formats other than "png" and "jpeg" are no longer supported.
+
+### Features
+
+- Added crate features (`png`, `jpeg`) to enable support for different output formats. Currently, only PNG and JPEG are supported. `png` is a default feature.
+
 ## [0.5.3](https://github.com/paulkre/bevy_image_export/compare/v0.5.2...v0.5.3) (2023-04-23)
 
 ### Bug Fixes

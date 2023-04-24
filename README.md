@@ -7,11 +7,11 @@ A Bevy plugin for rendering image sequences.
 
 ## Compatability
 
-| Bevy Version | Crate Version |
-| ------------ | ------------- |
-| `0.10`       | `0.4`, `0.5`  |
-| `0.9`        | `0.3`         |
-| `0.8`        | `0.1`, `0.2`  |
+| Bevy Version | Crate Version       |
+| ------------ | ------------------- |
+| `0.10`       | `0.4`, `0.5`, `0.6` |
+| `0.9`        | `0.3`               |
+| `0.8`        | `0.1`, `0.2`        |
 
 ## Usage
 
