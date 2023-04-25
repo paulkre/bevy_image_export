@@ -19,11 +19,13 @@ image = { version = "0.24", default-features = false }
 futures = "0.3"
 futures-lite = "1"
 wgpu = "0.15"
+bytemuck = "1.13"
 
 [features]
 default = ["png"]
 png = ["image/png"]
 jpeg = ["image/jpeg"]
+exr = ["image/exr"]
 
 [dev-dependencies]
 bevy = { version = "0.10", default-features = false, features = [
@@ -32,6 +34,7 @@ bevy = { version = "0.10", default-features = false, features = [
   "bevy_core_pipeline",
   "bevy_pbr",
 ] }
+image = { version = "0.24", default-features = false, features = ["exr"] }
 
 [profile.dev]
 opt-level = 1

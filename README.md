@@ -98,6 +98,7 @@ fn setup(
         settings: ImageExportSettings {
             // Frames will be saved to "./out/[#####].png".
             output_dir: "out".into(),
+            // Choose "exr" for HDR renders.
             extension: "png".into(),
         },
     });

@@ -17,8 +17,12 @@ use bevy::{
         RenderApp, RenderSet,
     },
 };
+use bytemuck::AnyBitPattern;
 use futures::channel::oneshot;
-use image::{error::UnsupportedErrorKind, ImageBuffer, ImageError, Rgba};
+use image::{
+    error::UnsupportedErrorKind, EncodableLayout, ImageBuffer, ImageError, Pixel,
+    PixelWithColorType, Rgba,
+};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -39,7 +43,7 @@ impl From<Handle<Image>> for ImageExportSource {
 pub struct ImageExportSettings {
     /// The directory that image files will be saved to.
     pub output_dir: String,
-    /// The image file extension. E.g. "png" or "jpeg".
+    /// The image file extension. E.g. "png", "jpeg", or "exr".
     pub extension: String,
 }
 
@@ -208,28 +212,52 @@ fn save_buffer_to_disk(
                     image_bytes = unpadded_bytes;
                 }
 
-                std::fs::create_dir_all(&settings.output_dir)
-                    .expect("Output path could not be created");
-
                 let path = format!(
                     "{}/{:05}.{}",
                     settings.output_dir, frame_id, settings.extension
                 );
 
-                let buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(
-                    source_size.width,
-                    source_size.height,
-                    image_bytes,
-                )
-                .unwrap();
+                std::fs::create_dir_all(&settings.output_dir)
+                    .expect("Output path could not be created");
 
-                match buffer.save(path) {
-                    Err(ImageError::Unsupported(err)) => {
-                        if let UnsupportedErrorKind::Format(hint) = err.kind() {
-                            println!("Image format {} is not supported", hint);
+                fn save_buffer<P: Pixel + PixelWithColorType>(
+                    image_bytes: &[P::Subpixel],
+                    source_size: &Extent3d,
+                    path: &str,
+                ) where
+                    P::Subpixel: AnyBitPattern,
+                    [P::Subpixel]: EncodableLayout,
+                {
+                    match ImageBuffer::<P, _>::from_raw(
+                        source_size.width,
+                        source_size.height,
+                        image_bytes,
+                    ) {
+                        Some(buffer) => match buffer.save(path) {
+                            Err(ImageError::Unsupported(err)) => {
+                                if let UnsupportedErrorKind::Format(hint) = err.kind() {
+                                    println!("Image format {} is not supported", hint);
+                                }
+                            }
+                            _ => {}
+                        },
+                        None => {
+                            println!("Failed creating image buffer for '{}'", path);
                         }
                     }
-                    _ => {}
+                }
+
+                match settings.extension.as_str() {
+                    "exr" => {
+                        save_buffer::<Rgba<f32>>(
+                            bytemuck::cast_slice(&image_bytes),
+                            &source_size,
+                            path.as_str(),
+                        );
+                    }
+                    _ => {
+                        save_buffer::<Rgba<u8>>(&image_bytes, &source_size, path.as_str());
+                    }
                 }
 
                 export_threads.count.fetch_sub(1, Ordering::SeqCst);
