@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0](https://github.com/paulkre/bevy_image_export/compare/v0.6.1...v0.7.0) (2023-04-25)
+
+### Features
+
+- Added support for HDR image exports. It is now possible to choose "exr" as an extension in `ImageExportSettings`.
+
 ## [0.6.1](https://github.com/paulkre/bevy_image_export/compare/v0.6.0...v0.6.1) (2023-04-24)
 
 ### Bug Fixes
