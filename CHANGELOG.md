@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.1](https://github.com/paulkre/bevy_image_export/compare/v0.7.0...v0.7.1) (2023-04-29)
+
+### Bug Fixes
+
+- Fixed naming of plugin's system sets. Before it was `SetupExportCameras`, now it is `SetupImageExport`.
+
 ## [0.7.0](https://github.com/paulkre/bevy_image_export/compare/v0.6.1...v0.7.0) (2023-04-25)
 
 ### Features
