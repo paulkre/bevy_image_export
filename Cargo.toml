@@ -6,7 +6,7 @@ categories = ["graphics", "rendering"]
 keywords = ["creative", "coding", "sketching"]
 description = "Bevy plugin for rendering image sequences"
 documentation = "https://docs.rs/bevy_image_export"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/paulkre/bevy_image_export"
 
