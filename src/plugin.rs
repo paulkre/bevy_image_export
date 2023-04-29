@@ -274,30 +274,26 @@ pub struct ImageExportPlugin {
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum ImageExportSystems {
-    SetupExportCameras,
-    SetupExportCamerasFlush,
+    SetupImageExport,
+    SetupImageExportFlush,
 }
 
 impl Plugin for ImageExportPlugin {
     fn build(&self, app: &mut App) {
         use ImageExportSystems::*;
 
-        app.configure_set(
-            SetupExportCamerasFlush
+        app.configure_sets(
+            (SetupImageExport, SetupImageExportFlush)
+                .chain()
                 .in_base_set(CoreSet::PostUpdate)
                 .before(CameraUpdateSystem),
-        )
-        .configure_set(
-            SetupExportCameras
-                .in_base_set(CoreSet::PostUpdate)
-                .before(SetupExportCamerasFlush),
         )
         .add_asset::<ImageExportSource>()
         .add_plugin(RenderAssetPlugin::<ImageExportSource>::default())
         .add_plugin(ExtractComponentPlugin::<ImageExportSettings>::default())
         .add_systems((
-            apply_system_buffers.in_set(SetupExportCamerasFlush),
-            setup_exporters.in_set(SetupExportCameras),
+            setup_exporters.in_set(SetupImageExport),
+            apply_system_buffers.in_set(SetupImageExportFlush),
         ));
 
         let render_app = app.sub_app_mut(RenderApp);
