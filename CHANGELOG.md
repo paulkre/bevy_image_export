@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.2](https://github.com/paulkre/bevy_image_export/compare/v0.7.1...v0.7.2) (2023-06-02)
+
+### Bug Fixes
+
+- Fixed a bug which sometimes caused image files not to get saved.
+- Included Apache-2.0 license in license field of Cargo manifest.
+
 ## [0.7.1](https://github.com/paulkre/bevy_image_export/compare/v0.7.0...v0.7.1) (2023-04-29)
 
 ### Bug Fixes
