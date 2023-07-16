@@ -28,15 +28,17 @@ fn main() {
             return_from_run: true,
             ..default()
         })
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                resolution: (768.0, 768.0).into(),
+        .add_plugins((
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    resolution: WindowResolution::new(768.0, 768.0).with_scale_factor_override(1.0),
+                    ..default()
+                }),
                 ..default()
             }),
-            ..default()
-        }))
-        .add_plugin(export_plugin)
-        // ...
+            export_plugin,
+        ))
+        .add_systems(Startup, setup)
         .run();
 
     // This line is optional but recommended.

@@ -9,7 +9,7 @@ use bevy::{
     window::WindowResolution,
     winit::WinitSettings,
 };
-use bevy_image_export::{ImageExportPlugin, ImageExportSource, ImageExportBundle};
+use bevy_image_export::{ImageExportBundle, ImageExportPlugin, ImageExportSource};
 use std::f32::consts::PI;
 
 fn main() {
@@ -21,20 +21,22 @@ fn main() {
             return_from_run: true,
             ..default()
         })
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                resolution: WindowResolution::new(768.0, 768.0).with_scale_factor_override(1.0),
+        .add_plugins((
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    resolution: WindowResolution::new(768.0, 768.0).with_scale_factor_override(1.0),
+                    ..default()
+                }),
                 ..default()
             }),
-            ..default()
-        }))
-        .add_plugin(export_plugin)
+            export_plugin,
+        ))
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1.0,
         })
-        .add_startup_system(setup)
-        .add_system(update)
+        .add_systems(Startup, setup)
+        .add_systems(Update, update)
         .run();
 
     export_threads.finish();

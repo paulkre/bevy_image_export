@@ -14,7 +14,7 @@ use bevy::{
         render_graph::RenderGraph,
         render_resource::{Buffer, BufferDescriptor, BufferUsages, Extent3d, MapMode},
         renderer::RenderDevice,
-        RenderApp, RenderSet,
+        Render, RenderApp, RenderSet,
     },
 };
 use bytemuck::AnyBitPattern;
@@ -29,7 +29,7 @@ use std::sync::{
 };
 use wgpu::Maintain;
 
-#[derive(Clone, TypeUuid, Default)]
+#[derive(Clone, TypeUuid, Default, Reflect)]
 #[uuid = "d619b2f8-58cf-42f6-b7da-028c0595f7aa"]
 pub struct ImageExportSource(pub Handle<Image>);
 
@@ -71,9 +71,9 @@ impl RenderAsset for ImageExportSource {
         let gpu_image = images.get(&extracted_asset.0).unwrap();
 
         let size = gpu_image.texture.size();
-        let format = gpu_image.texture_format.describe();
+        let format = &gpu_image.texture_format;
         let bytes_per_row =
-            (size.width as u32 / format.block_dimensions.0 as u32) * format.block_size as u32;
+            (size.width / format.block_dimensions().0) * format.block_size(None).unwrap();
         let padded_bytes_per_row =
             RenderDevice::align_copy_bytes_per_row(bytes_per_row as usize) as u32;
 
@@ -283,26 +283,36 @@ impl Plugin for ImageExportPlugin {
         use ImageExportSystems::*;
 
         app.configure_sets(
+            PostUpdate,
             (SetupImageExport, SetupImageExportFlush)
                 .chain()
-                .in_base_set(CoreSet::PostUpdate)
                 .before(CameraUpdateSystem),
         )
+        .register_type::<ImageExportSource>()
         .add_asset::<ImageExportSource>()
-        .add_plugin(RenderAssetPlugin::<ImageExportSource>::default())
-        .add_plugin(ExtractComponentPlugin::<ImageExportSettings>::default())
-        .add_systems((
-            setup_exporters.in_set(SetupImageExport),
-            apply_system_buffers.in_set(SetupImageExportFlush),
-        ));
+        .register_asset_reflect::<ImageExportSource>()
+        .add_plugins((
+            RenderAssetPlugin::<ImageExportSource>::default(),
+            ExtractComponentPlugin::<ImageExportSettings>::default(),
+        ))
+        .add_systems(
+            PostUpdate,
+            (
+                setup_exporters.in_set(SetupImageExport),
+                apply_deferred.in_set(SetupImageExportFlush),
+            ),
+        );
 
         let render_app = app.sub_app_mut(RenderApp);
 
-        render_app.insert_resource(self.threads.clone()).add_system(
-            save_buffer_to_disk
-                .after(RenderSet::Render)
-                .before(RenderSet::Cleanup),
-        );
+        render_app
+            .insert_resource(self.threads.clone())
+            .add_systems(
+                Render,
+                save_buffer_to_disk
+                    .after(RenderSet::Render)
+                    .before(RenderSet::Cleanup),
+            );
 
         let mut graph = render_app.world.get_resource_mut::<RenderGraph>().unwrap();
 

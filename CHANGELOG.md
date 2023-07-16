@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Breaking Changes
+
+- Updated Bevy to 0.11.
+
 ## [0.7.2](https://github.com/paulkre/bevy_image_export/compare/v0.7.1...v0.7.2) (2023-06-02)
 
 ### Bug Fixes

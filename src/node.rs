@@ -8,7 +8,6 @@ use bevy::{
         renderer::RenderContext,
     },
 };
-use std::num::NonZeroU32;
 
 pub const NODE_NAME: &str = "image_export";
 
@@ -31,9 +30,7 @@ impl Node for ImageExportNode {
                         buffer: &source.buffer,
                         layout: ImageDataLayout {
                             offset: 0,
-                            bytes_per_row: Some(
-                                NonZeroU32::new(source.padded_bytes_per_row).unwrap(),
-                            ),
+                            bytes_per_row: Some(source.padded_bytes_per_row),
                             rows_per_image: None,
                         },
                     },
