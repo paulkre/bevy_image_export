@@ -33,6 +33,10 @@ bevy = { version = "0.11", default-features = false, features = [
   "bevy_winit",
   "bevy_core_pipeline",
   "bevy_pbr",
+  "hdr",
+  "tonemapping_luts",
+  "ktx2",
+  "zstd",
 ] }
 image = { version = "0.24", default-features = false, features = ["exr"] }
 
