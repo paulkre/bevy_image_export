@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0](https://github.com/paulkre/bevy_image_export/compare/v0.8.0...v0.9.0) (2023-12-09)
+
+### Breaking Changes
+
+- Updated Bevy to 0.12.
+
 ## [0.8.0](https://github.com/paulkre/bevy_image_export/compare/v0.7.2...v0.8.0) (2023-07-16)
 
 ### Breaking Changes
