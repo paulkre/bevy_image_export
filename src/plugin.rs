@@ -29,7 +29,7 @@ use std::sync::{
 };
 use wgpu::Maintain;
 
-#[derive(Clone, TypeUuid, Default, Reflect)]
+#[derive(Asset, Clone, TypeUuid, Default, Reflect)]
 #[uuid = "d619b2f8-58cf-42f6-b7da-028c0595f7aa"]
 pub struct ImageExportSource(pub Handle<Image>);
 
@@ -289,7 +289,7 @@ impl Plugin for ImageExportPlugin {
                 .before(CameraUpdateSystem),
         )
         .register_type::<ImageExportSource>()
-        .add_asset::<ImageExportSource>()
+        .init_asset::<ImageExportSource>()
         .register_asset_reflect::<ImageExportSource>()
         .add_plugins((
             RenderAssetPlugin::<ImageExportSource>::default(),

@@ -19,7 +19,7 @@ impl Node for ImageExportNode {
         render_context: &mut RenderContext,
         world: &World,
     ) -> Result<(), NodeRunError> {
-        for source in world.resource::<RenderAssets<ImageExportSource>>().values() {
+        for (_, source) in world.resource::<RenderAssets<ImageExportSource>>().iter() {
             if let Some(gpu_image) = world
                 .resource::<RenderAssets<Image>>()
                 .get(&source.source_handle)
