@@ -1,16 +1,17 @@
-use crate::node::{ImageExportNode, NODE_NAME};
+use crate::node::{ImageExportLabel, ImageExportNode};
 use bevy::{
     ecs::{
         query::QueryItem,
         system::{lifetimeless::SRes, SystemParamItem},
     },
     prelude::*,
-    reflect::TypeUuid,
     render::{
         camera::CameraUpdateSystem,
         extract_component::{ExtractComponent, ExtractComponentPlugin},
-        main_graph::node::CAMERA_DRIVER,
-        render_asset::{PrepareAssetError, RenderAsset, RenderAssetPlugin, RenderAssets},
+        graph::CameraDriverLabel,
+        render_asset::{
+            PrepareAssetError, RenderAsset, RenderAssetPlugin, RenderAssetUsages, RenderAssets,
+        },
         render_graph::RenderGraph,
         render_resource::{Buffer, BufferDescriptor, BufferUsages, Extent3d, MapMode},
         renderer::RenderDevice,
@@ -29,8 +30,7 @@ use std::sync::{
 };
 use wgpu::Maintain;
 
-#[derive(Asset, Clone, TypeUuid, Default, Reflect)]
-#[uuid = "d619b2f8-58cf-42f6-b7da-028c0595f7aa"]
+#[derive(Asset, Reflect, Clone, Default)]
 pub struct ImageExportSource(pub Handle<Image>);
 
 impl From<Handle<Image>> for ImageExportSource {
@@ -56,24 +56,23 @@ pub struct GpuImageExportSource {
 }
 
 impl RenderAsset for ImageExportSource {
-    type ExtractedAsset = Self;
     type PreparedAsset = GpuImageExportSource;
     type Param = (SRes<RenderDevice>, SRes<RenderAssets<Image>>);
 
-    fn extract_asset(&self) -> Self::ExtractedAsset {
-        self.clone()
+    fn asset_usage(&self) -> RenderAssetUsages {
+        RenderAssetUsages::RENDER_WORLD
     }
 
     fn prepare_asset(
-        extracted_asset: Self::ExtractedAsset,
+        self,
         (device, images): &mut SystemParamItem<Self::Param>,
-    ) -> Result<Self::PreparedAsset, PrepareAssetError<Self::ExtractedAsset>> {
-        let gpu_image = images.get(&extracted_asset.0).unwrap();
+    ) -> Result<Self::PreparedAsset, PrepareAssetError<Self>> {
+        let gpu_image = images.get(&self.0).unwrap();
 
         let size = gpu_image.texture.size();
         let format = &gpu_image.texture_format;
         let bytes_per_row =
-            (size.width / format.block_dimensions().0) * format.block_size(None).unwrap();
+            (size.width / format.block_dimensions().0) * format.block_copy_size(None).unwrap();
         let padded_bytes_per_row =
             RenderDevice::align_copy_bytes_per_row(bytes_per_row as usize) as u32;
 
@@ -86,7 +85,7 @@ impl RenderAsset for ImageExportSource {
                 usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
                 mapped_at_creation: false,
             }),
-            source_handle: extracted_asset.0.clone(),
+            source_handle: self.0,
             source_size,
             bytes_per_row,
             padded_bytes_per_row,
@@ -107,16 +106,16 @@ impl Default for ImageExportSettings {
 }
 
 impl ExtractComponent for ImageExportSettings {
-    type Query = (
+    type QueryData = (
         &'static Self,
         &'static Handle<ImageExportSource>,
         &'static ImageExportStartFrame,
     );
-    type Filter = ();
+    type QueryFilter = ();
     type Out = (Self, Handle<ImageExportSource>, ImageExportStartFrame);
 
     fn extract_component(
-        (settings, source_handle, start_frame): QueryItem<'_, Self::Query>,
+        (settings, source_handle, start_frame): QueryItem<'_, Self::QueryData>,
     ) -> Option<Self::Out> {
         Some((
             settings.clone(),
@@ -316,7 +315,7 @@ impl Plugin for ImageExportPlugin {
 
         let mut graph = render_app.world.get_resource_mut::<RenderGraph>().unwrap();
 
-        graph.add_node(NODE_NAME, ImageExportNode);
-        graph.add_node_edge(CAMERA_DRIVER, NODE_NAME);
+        graph.add_node(ImageExportLabel, ImageExportNode);
+        graph.add_node_edge(CameraDriverLabel, ImageExportLabel);
     }
 }

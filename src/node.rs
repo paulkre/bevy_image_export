@@ -3,13 +3,14 @@ use bevy::{
     prelude::*,
     render::{
         render_asset::RenderAssets,
-        render_graph::{Node, NodeRunError, RenderGraphContext},
+        render_graph::{Node, NodeRunError, RenderGraphContext, RenderLabel},
         render_resource::{ImageCopyBuffer, ImageDataLayout},
         renderer::RenderContext,
     },
 };
 
-pub const NODE_NAME: &str = "image_export";
+#[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
+pub struct ImageExportLabel;
 
 pub struct ImageExportNode;
 impl Node for ImageExportNode {

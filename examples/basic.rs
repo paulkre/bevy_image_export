@@ -7,7 +7,6 @@ use bevy::{
         },
     },
     window::WindowResolution,
-    winit::WinitSettings,
 };
 use bevy_image_export::{ImageExportBundle, ImageExportPlugin, ImageExportSource};
 use std::f32::consts::PI;
@@ -17,10 +16,6 @@ fn main() {
     let export_threads = export_plugin.threads.clone();
 
     App::new()
-        .insert_resource(WinitSettings {
-            return_from_run: true,
-            ..default()
-        })
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
@@ -33,7 +28,7 @@ fn main() {
         ))
         .insert_resource(AmbientLight {
             color: Color::WHITE,
-            brightness: 1.0,
+            brightness: 1000.0,
         })
         .add_systems(Startup, setup)
         .add_systems(Update, update)
@@ -91,14 +86,14 @@ fn setup(
         });
 
     commands.spawn(ImageExportBundle {
-        source: export_sources.add(output_texture_handle.into()),
+        source: export_sources.add(output_texture_handle),
         ..default()
     });
 
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::try_from(shape::Cube::default()).unwrap()),
-            material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
+            mesh: meshes.add(Mesh::try_from(Cuboid::default()).unwrap()),
+            material: materials.add(Color::rgb(1.0, 0.0, 0.0)),
             ..default()
         },
         Moving,

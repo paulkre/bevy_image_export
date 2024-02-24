@@ -18,18 +18,11 @@ A Bevy plugin for rendering image sequences.
 ## Usage
 
 ```rust
-use bevy::{prelude::*, winit::WinitSettings};
-use bevy_image_export::{ImageExportPlugin, ImageExportBundle, ImageExportSource};
-
 fn main() {
     let export_plugin = ImageExportPlugin::default();
     let export_threads = export_plugin.threads.clone();
 
     App::new()
-        .insert_resource(WinitSettings {
-            return_from_run: true,
-            ..default()
-        })
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
@@ -98,7 +91,7 @@ fn setup(
 
     // Spawn the ImageExportBundle to initiate the export of the output texture.
     commands.spawn(ImageExportBundle {
-        source: export_sources.add(output_texture_handle.into()),
+        source: export_sources.add(output_texture_handle),
         settings: ImageExportSettings {
             // Frames will be saved to "./out/[#####].png".
             output_dir: "out".into(),

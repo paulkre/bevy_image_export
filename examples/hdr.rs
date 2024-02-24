@@ -1,5 +1,5 @@
 use bevy::{
-    core_pipeline::{clear_color::ClearColorConfig, tonemapping::Tonemapping},
+    core_pipeline::tonemapping::Tonemapping,
     prelude::*,
     render::{
         camera::RenderTarget,
@@ -8,7 +8,6 @@ use bevy::{
         },
     },
     window::WindowResolution,
-    winit::WinitSettings,
 };
 use bevy_image_export::{
     ImageExportBundle, ImageExportPlugin, ImageExportSettings, ImageExportSource,
@@ -20,10 +19,6 @@ fn main() {
     let export_threads = export_plugin.threads.clone();
 
     App::new()
-        .insert_resource(WinitSettings {
-            return_from_run: true,
-            ..default()
-        })
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
@@ -74,25 +69,20 @@ fn setup(
         images.add(export_texture)
     };
 
-    let camera_3d = Camera3d {
-        clear_color: ClearColorConfig::Custom(Color::BLACK),
-        ..default()
-    };
     let tonemapping = Tonemapping::None;
     commands
         .spawn(Camera3dBundle {
             transform: Transform::from_translation(4.2 * Vec3::Z),
-            camera_3d: camera_3d.clone(),
             tonemapping,
             camera: Camera {
                 hdr: true,
+                clear_color: ClearColorConfig::Custom(Color::BLACK),
                 ..default()
             },
             ..default()
         })
         .with_children(|parent| {
             parent.spawn(Camera3dBundle {
-                camera_3d,
                 tonemapping,
                 camera: Camera {
                     target: RenderTarget::Image(output_texture_handle.clone()),
@@ -104,7 +94,7 @@ fn setup(
         });
 
     commands.spawn(ImageExportBundle {
-        source: exporter_sources.add(output_texture_handle.into()),
+        source: exporter_sources.add(output_texture_handle),
         settings: ImageExportSettings {
             extension: "exr".into(),
             ..default()
@@ -119,7 +109,7 @@ fn setup(
     commands.spawn((
         PointLightBundle {
             point_light: PointLight {
-                intensity: 100_000.0,
+                intensity: 100_000_000.0,
                 ..default()
             },
             ..default()
@@ -128,14 +118,8 @@ fn setup(
     ));
 
     commands.spawn(PbrBundle {
-        mesh: meshes.add(
-            Mesh::try_from(shape::Icosphere {
-                radius: 1.0,
-                subdivisions: 8,
-            })
-            .unwrap(),
-        ),
-        material: materials.add(Color::rgb(1.0, 0.75, 0.5).into()),
+        mesh: meshes.add(Mesh::try_from(Sphere { radius: 1.0 }).unwrap()),
+        material: materials.add(Color::rgb(1.0, 0.75, 0.5)),
         ..default()
     });
 }
