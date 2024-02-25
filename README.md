@@ -19,6 +19,9 @@ A [Bevy](https://bevyengine.org/) plugin for rendering image sequences.
 ## Usage
 
 ```rust
+const WIDTH: u32 = 768;
+const HEIGHT: u32 = 768;
+
 fn main() {
     let export_plugin = ImageExportPlugin::default();
     let export_threads = export_plugin.threads.clone();
@@ -27,7 +30,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
-                    resolution: WindowResolution::new(768.0, 768.0).with_scale_factor_override(1.0),
+                    resolution: (WIDTH as f32, HEIGHT as f32).into(),
                     ..default()
                 }),
                 ..default()
@@ -50,8 +53,8 @@ fn setup(
     // Create an output texture.
     let output_texture_handle = {
         let size = Extent3d {
-            width: 768,
-            height: 768,
+            width: WIDTH,
+            height: HEIGHT,
             ..default()
         };
         let mut export_texture = Image {
@@ -100,8 +103,6 @@ fn setup(
             extension: "png".into(),
         },
     });
-
-    // ...
 }
 ```
 

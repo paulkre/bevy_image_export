@@ -7,12 +7,14 @@ use bevy::{
             Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
         },
     },
-    window::WindowResolution,
 };
 use bevy_image_export::{
     ImageExportBundle, ImageExportPlugin, ImageExportSettings, ImageExportSource,
 };
 use std::f32::consts::PI;
+
+const WIDTH: u32 = 768;
+const HEIGHT: u32 = 768;
 
 fn main() {
     let export_plugin = ImageExportPlugin::default();
@@ -22,7 +24,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
-                    resolution: WindowResolution::new(768.0, 768.0).with_scale_factor_override(1.0),
+                    resolution: (WIDTH as f32, HEIGHT as f32).into(),
                     ..default()
                 }),
                 ..default()
@@ -45,8 +47,8 @@ fn setup(
 ) {
     let output_texture_handle = {
         let size = Extent3d {
-            width: 768,
-            height: 768,
+            width: WIDTH,
+            height: HEIGHT,
             ..default()
         };
         let mut export_texture = Image {
