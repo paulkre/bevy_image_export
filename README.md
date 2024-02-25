@@ -3,9 +3,9 @@
 [![Crates.io](https://img.shields.io/crates/v/bevy_image_export.svg)](https://crates.io/crates/bevy_image_export)
 [![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/paulkre/bevy_image_export/blob/main/LICENSE)
 
-A Bevy plugin for rendering image sequences.
+A [Bevy](https://bevyengine.org/) plugin for rendering image sequences.
 
-## Compatability
+## Compatibility
 
 | Bevy Version | Crate Version |
 | ------------ | ------------- |
