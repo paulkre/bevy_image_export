@@ -120,8 +120,8 @@ fn setup(
     ));
 
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::try_from(Sphere { radius: 1.0 }).unwrap()),
-        material: materials.add(Color::rgb(1.0, 0.75, 0.5)),
+        mesh: meshes.add(Mesh::from(Sphere { radius: 1.0 })),
+        material: materials.add(Color::srgb(1.0, 0.75, 0.5)),
         ..default()
     });
 }

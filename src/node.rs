@@ -1,4 +1,4 @@
-use crate::ImageExportSource;
+use crate::GpuImageExportSource;
 use bevy::{
     prelude::*,
     render::{
@@ -6,6 +6,7 @@ use bevy::{
         render_graph::{Node, NodeRunError, RenderGraphContext, RenderLabel},
         render_resource::{ImageCopyBuffer, ImageDataLayout},
         renderer::RenderContext,
+        texture::GpuImage,
     },
 };
 
@@ -20,9 +21,12 @@ impl Node for ImageExportNode {
         render_context: &mut RenderContext,
         world: &World,
     ) -> Result<(), NodeRunError> {
-        for (_, source) in world.resource::<RenderAssets<ImageExportSource>>().iter() {
+        for (_, source) in world
+            .resource::<RenderAssets<GpuImageExportSource>>()
+            .iter()
+        {
             if let Some(gpu_image) = world
-                .resource::<RenderAssets<Image>>()
+                .resource::<RenderAssets<GpuImage>>()
                 .get(&source.source_handle)
             {
                 render_context.command_encoder().copy_texture_to_buffer(
