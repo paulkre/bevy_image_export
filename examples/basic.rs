@@ -95,8 +95,8 @@ fn setup(
 
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::try_from(Cuboid::default()).unwrap()),
-            material: materials.add(Color::rgb(1.0, 0.0, 0.0)),
+            mesh: meshes.add(Mesh::from(Cuboid::default())),
+            material: materials.add(Color::srgb(1.0, 0.0, 0.0)),
             ..default()
         },
         Moving,

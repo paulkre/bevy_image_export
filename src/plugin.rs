@@ -15,6 +15,7 @@ use bevy::{
         render_graph::RenderGraph,
         render_resource::{Buffer, BufferDescriptor, BufferUsages, Extent3d, MapMode},
         renderer::RenderDevice,
+        texture::GpuImage,
         Render, RenderApp, RenderSet,
     },
 };
@@ -55,19 +56,19 @@ pub struct GpuImageExportSource {
     pub padded_bytes_per_row: u32,
 }
 
-impl RenderAsset for ImageExportSource {
-    type PreparedAsset = GpuImageExportSource;
-    type Param = (SRes<RenderDevice>, SRes<RenderAssets<Image>>);
+impl RenderAsset for GpuImageExportSource {
+    type SourceAsset = ImageExportSource;
+    type Param = (SRes<RenderDevice>, SRes<RenderAssets<GpuImage>>);
 
-    fn asset_usage(&self) -> RenderAssetUsages {
+    fn asset_usage(_: &Self::SourceAsset) -> RenderAssetUsages {
         RenderAssetUsages::RENDER_WORLD
     }
 
     fn prepare_asset(
-        self,
+        source_asset: Self::SourceAsset,
         (device, images): &mut SystemParamItem<Self::Param>,
-    ) -> Result<Self::PreparedAsset, PrepareAssetError<Self>> {
-        let gpu_image = images.get(&self.0).unwrap();
+    ) -> Result<Self, PrepareAssetError<Self::SourceAsset>> {
+        let gpu_image = images.get(&source_asset.0).unwrap();
 
         let size = gpu_image.texture.size();
         let format = &gpu_image.texture_format;
@@ -85,11 +86,15 @@ impl RenderAsset for ImageExportSource {
                 usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
                 mapped_at_creation: false,
             }),
-            source_handle: self.0,
+            source_handle: source_asset.0,
             source_size,
             bytes_per_row,
             padded_bytes_per_row,
         })
+    }
+
+    fn byte_len(_: &Self::SourceAsset) -> Option<usize> {
+        None
     }
 }
 
@@ -164,7 +169,7 @@ fn save_buffer_to_disk(
         &ImageExportSettings,
         &ImageExportStartFrame,
     )>,
-    sources: Res<RenderAssets<ImageExportSource>>,
+    sources: Res<RenderAssets<GpuImageExportSource>>,
     render_device: Res<RenderDevice>,
     export_threads: Res<ExportThreads>,
     mut frame_id: Local<u64>,
@@ -232,14 +237,13 @@ fn save_buffer_to_disk(
                         source_size.height,
                         image_bytes,
                     ) {
-                        Some(buffer) => match buffer.save(path) {
-                            Err(ImageError::Unsupported(err)) => {
+                        Some(buffer) => {
+                            if let Err(ImageError::Unsupported(err)) = buffer.save(path) {
                                 if let UnsupportedErrorKind::Format(hint) = err.kind() {
                                     println!("Image format {} is not supported", hint);
                                 }
                             }
-                            _ => {}
-                        },
+                        }
                         None => {
                             println!("Failed creating image buffer for '{}'", path);
                         }
@@ -291,7 +295,7 @@ impl Plugin for ImageExportPlugin {
         .init_asset::<ImageExportSource>()
         .register_asset_reflect::<ImageExportSource>()
         .add_plugins((
-            RenderAssetPlugin::<ImageExportSource>::default(),
+            RenderAssetPlugin::<GpuImageExportSource>::default(),
             ExtractComponentPlugin::<ImageExportSettings>::default(),
         ))
         .add_systems(
@@ -313,7 +317,10 @@ impl Plugin for ImageExportPlugin {
                     .before(RenderSet::Cleanup),
             );
 
-        let mut graph = render_app.world.get_resource_mut::<RenderGraph>().unwrap();
+        let mut graph = render_app
+            .world_mut()
+            .get_resource_mut::<RenderGraph>()
+            .unwrap();
 
         graph.add_node(ImageExportLabel, ImageExportNode);
         graph.add_node_edge(CameraDriverLabel, ImageExportLabel);
