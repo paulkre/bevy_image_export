@@ -30,6 +30,7 @@ exr = ["image/exr"]
 [dev-dependencies]
 bevy = "0.14"
 image = { version = "0.25", default-features = false, features = ["exr"] }
+anyhow = "1.0"
 
 [profile.dev]
 opt-level = 1
