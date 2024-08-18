@@ -29,13 +29,18 @@ fn main() {
 
     App::new()
         .add_plugins((
-            DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    resolution: (WIDTH as f32, HEIGHT as f32).into(),
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resolution: (WIDTH as f32, HEIGHT as f32).into(),
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(RenderPlugin {
+                    synchronous_pipeline_compilation: true,
                     ..default()
                 }),
-                ..default()
-            }),
             export_plugin,
         ))
         .add_systems(Startup, setup)

@@ -5,6 +5,7 @@ use bevy::{
         render_resource::{
             Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
         },
+        RenderPlugin,
     },
 };
 use bevy_image_export::{ImageExportBundle, ImageExportPlugin, ImageExportSource};
@@ -19,16 +20,20 @@ fn main() {
 
     App::new()
         .add_plugins((
-            DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    resolution: (WIDTH as f32, HEIGHT as f32).into(),
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resolution: (WIDTH as f32, HEIGHT as f32).into(),
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(RenderPlugin {
+                    synchronous_pipeline_compilation: true,
                     ..default()
                 }),
-                ..default()
-            }),
             export_plugin,
         ))
-        // .add_plugins((DefaultPlugins, export_plugin))
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1000.0,
