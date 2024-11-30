@@ -11,14 +11,14 @@ readme = "README.md"
 repository = "https://github.com/paulkre/bevy_image_export"
 
 [dependencies]
-bevy = { version = "0.14", default-features = false, features = [
+bevy = { version = "0.15", default-features = false, features = [
   "bevy_render",
   "bevy_asset",
 ] }
 image = { version = "0.25", default-features = false }
 futures = "0.3"
 futures-lite = "2.1"
-wgpu = "0.20"
+wgpu = "23"
 bytemuck = "1.13"
 
 [features]
@@ -28,7 +28,7 @@ jpeg = ["image/jpeg"]
 exr = ["image/exr"]
 
 [dev-dependencies]
-bevy = "0.14"
+bevy = "0.15"
 image = { version = "0.25", default-features = false, features = ["exr"] }
 anyhow = "1.0"
 

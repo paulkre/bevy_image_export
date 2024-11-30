@@ -84,31 +84,29 @@ fn setup(
     };
 
     commands
-        .spawn(Camera3dBundle {
-            transform: Transform::from_translation(5.0 * Vec3::Z),
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn(Camera3dBundle {
-                camera: Camera {
-                    // Connect the output texture to a camera as a RenderTarget.
-                    target: RenderTarget::Image(output_texture_handle.clone()),
-                    ..default()
-                },
+        .spawn((
+            Camera3d::default(),
+            Transform::from_translation(5.0 * Vec3::Z),
+        ))
+        .with_child((
+            Camera3d::default(),
+            Camera {
+                // Connect the output texture to a camera as a RenderTarget.
+                target: RenderTarget::Image(output_texture_handle.clone()),
                 ..default()
-            });
-        });
+            },
+        ));
 
     // Spawn the ImageExportBundle to initiate the export of the output texture.
-    commands.spawn(ImageExportBundle {
-        source: export_sources.add(output_texture_handle),
-        settings: ImageExportSettings {
+    commands.spawn((
+        ImageExport(export_sources.add(output_texture_handle)),
+        ImageExportSettings {
             // Frames will be saved to "./out/[#####].png".
             output_dir: "out".into(),
             // Choose "exr" for HDR renders.
             extension: "png".into(),
         },
-    });
+    ));
 }
 ```
 

@@ -8,7 +8,7 @@ use bevy::{
         RenderPlugin,
     },
 };
-use bevy_image_export::{ImageExportBundle, ImageExportPlugin, ImageExportSource};
+use bevy_image_export::{ImageExport, ImageExportPlugin, ImageExportSource};
 use std::f32::consts::PI;
 
 const WIDTH: u32 = 768;
@@ -79,37 +79,30 @@ fn setup(
     };
 
     commands
-        .spawn(Camera3dBundle {
-            transform: Transform::from_translation(4.2 * Vec3::Z),
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn(Camera3dBundle {
-                camera: Camera {
-                    target: RenderTarget::Image(output_texture_handle.clone()),
-                    ..default()
-                },
+        .spawn((
+            Camera3d::default(),
+            Transform::from_translation(4.2 * Vec3::Z),
+        ))
+        .with_child((
+            Camera3d::default(),
+            Camera {
+                target: RenderTarget::Image(output_texture_handle.clone()),
                 ..default()
-            });
-        });
+            },
+        ));
 
-    commands.spawn(ImageExportBundle {
-        source: export_sources.add(output_texture_handle),
-        ..default()
-    });
+    commands.spawn(ImageExport(export_sources.add(output_texture_handle)));
 
     commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Mesh::from(Cuboid::default())),
-            material: materials.add(Color::srgb(1.0, 0.0, 0.0)),
-            ..default()
-        },
+        Mesh3d(meshes.add(Mesh::from(Cuboid::default()))),
+        MeshMaterial3d(materials.add(Color::srgb(1.0, 0.0, 0.0))),
         Moving,
     ));
 }
 
 #[derive(Component)]
 struct Moving;
+
 fn update(mut transforms: Query<&mut Transform, With<Moving>>, mut frame: Local<u32>) {
     let theta = *frame as f32 * 0.25 * PI;
     *frame += 1;

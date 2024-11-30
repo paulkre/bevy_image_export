@@ -113,18 +113,18 @@ impl Default for ImageExportSettings {
 impl ExtractComponent for ImageExportSettings {
     type QueryData = (
         &'static Self,
-        &'static Handle<ImageExportSource>,
+        &'static ImageExport,
         &'static ImageExportStartFrame,
     );
     type QueryFilter = ();
-    type Out = (Self, Handle<ImageExportSource>, ImageExportStartFrame);
+    type Out = (Self, ImageExport, ImageExportStartFrame);
 
     fn extract_component(
-        (settings, source_handle, start_frame): QueryItem<'_, Self::QueryData>,
+        (settings, export, start_frame): QueryItem<'_, Self::QueryData>,
     ) -> Option<Self::Out> {
         Some((
             settings.clone(),
-            source_handle.clone_weak(),
+            ImageExport(export.0.clone_weak()),
             start_frame.clone(),
         ))
     }
@@ -143,11 +143,9 @@ fn setup_exporters(
     }
 }
 
-#[derive(Bundle, Default)]
-pub struct ImageExportBundle {
-    pub source: Handle<ImageExportSource>,
-    pub settings: ImageExportSettings,
-}
+#[derive(Component, Clone, Default)]
+#[require(ImageExportSettings)]
+pub struct ImageExport(pub Handle<ImageExportSource>);
 
 #[derive(Default, Clone, Resource)]
 pub struct ExportThreads {
@@ -164,19 +162,15 @@ impl ExportThreads {
 }
 
 fn save_buffer_to_disk(
-    export_bundles: Query<(
-        &Handle<ImageExportSource>,
-        &ImageExportSettings,
-        &ImageExportStartFrame,
-    )>,
+    export_bundles: Query<(&ImageExport, &ImageExportSettings, &ImageExportStartFrame)>,
     sources: Res<RenderAssets<GpuImageExportSource>>,
     render_device: Res<RenderDevice>,
     export_threads: Res<ExportThreads>,
     mut frame_id: Local<u64>,
 ) {
     *frame_id = frame_id.wrapping_add(1);
-    for (source_handle, settings, start_frame) in &export_bundles {
-        if let Some(gpu_source) = sources.get(source_handle) {
+    for (export, settings, start_frame) in &export_bundles {
+        if let Some(gpu_source) = sources.get(&export.0) {
             let mut image_bytes = {
                 let slice = gpu_source.buffer.slice(..);
 

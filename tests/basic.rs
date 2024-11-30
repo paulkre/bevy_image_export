@@ -19,7 +19,7 @@ use bevy::{
     text::TextPlugin,
     ui::UiPlugin,
 };
-use bevy_image_export::{ImageExportBundle, ImageExportPlugin, ImageExportSource};
+use bevy_image_export::{ImageExport, ImageExportPlugin, ImageExportSource};
 use std::f32::consts::PI;
 
 const WIDTH: u32 = 16;
@@ -44,9 +44,12 @@ impl PluginGroup for ImageExportTestPlugins {
             })
             .add(texture::ImagePlugin::default())
             .add(CorePipelinePlugin)
-            .add(SpritePlugin)
+            .add(SpritePlugin { add_picking: false })
             .add(TextPlugin)
-            .add(UiPlugin)
+            .add(UiPlugin {
+                add_picking: false,
+                ..default()
+            })
             .add(PbrPlugin::default())
     }
 }
@@ -65,7 +68,7 @@ fn assert_image_eq(a: &[u8], b: &[u8]) -> anyhow::Result<()> {
 
     let mut error: usize = 0;
     for (a, b) in a.iter().zip(b.iter()) {
-        error += (*a as i32 - *b as i32).abs() as usize;
+        error += (*a as i32 - *b as i32).unsigned_abs() as usize;
     }
 
     if error > 20 {
@@ -154,32 +157,24 @@ fn setup(
     };
 
     commands
-        .spawn(Camera3dBundle {
-            transform: Transform::from_translation(4.2 * Vec3::Z),
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn(Camera3dBundle {
-                camera: Camera {
-                    target: RenderTarget::Image(output_texture_handle.clone()),
-                    clear_color: ClearColorConfig::Custom(Color::BLACK),
-                    ..default()
-                },
+        .spawn((
+            Camera3d::default(),
+            Transform::from_translation(4.2 * Vec3::Z),
+        ))
+        .with_child((
+            Camera3d::default(),
+            Camera {
+                target: RenderTarget::Image(output_texture_handle.clone()),
+                clear_color: ClearColorConfig::Custom(Color::BLACK),
                 ..default()
-            });
-        });
+            },
+        ));
 
-    commands.spawn(ImageExportBundle {
-        source: export_sources.add(output_texture_handle),
-        ..default()
-    });
+    commands.spawn(ImageExport(export_sources.add(output_texture_handle)));
 
     commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Mesh::from(Cuboid::default())),
-            material: materials.add(Color::srgb(1.0, 0.0, 0.0)),
-            ..default()
-        },
+        Mesh3d(meshes.add(Mesh::from(Cuboid::default()))),
+        MeshMaterial3d(materials.add(Color::srgb(1.0, 0.0, 0.0))),
         Moving,
     ));
 }

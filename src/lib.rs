@@ -2,6 +2,6 @@ mod node;
 mod plugin;
 
 pub use plugin::{
-    GpuImageExportSource, ImageExportPlugin, ImageExportSettings, ImageExportSource,
-    ImageExportSystems, ImageExportBundle,
+    GpuImageExportSource, ImageExport, ImageExportPlugin, ImageExportSettings, ImageExportSource,
+    ImageExportSystems,
 };

@@ -9,9 +9,7 @@ use bevy::{
         RenderPlugin,
     },
 };
-use bevy_image_export::{
-    ImageExportBundle, ImageExportPlugin, ImageExportSettings, ImageExportSource,
-};
+use bevy_image_export::{ImageExport, ImageExportPlugin, ImageExportSettings, ImageExportSource};
 use std::f32::consts::PI;
 
 const WIDTH: u32 = 768;
@@ -79,35 +77,33 @@ fn setup(
 
     let tonemapping = Tonemapping::None;
     commands
-        .spawn(Camera3dBundle {
-            transform: Transform::from_translation(4.2 * Vec3::Z),
-            tonemapping,
-            camera: Camera {
+        .spawn((
+            Camera3d::default(),
+            Camera {
                 hdr: true,
                 clear_color: ClearColorConfig::Custom(Color::BLACK),
                 ..default()
             },
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn(Camera3dBundle {
-                tonemapping,
-                camera: Camera {
-                    target: RenderTarget::Image(output_texture_handle.clone()),
-                    hdr: true,
-                    ..default()
-                },
+            Transform::from_translation(4.2 * Vec3::Z),
+            tonemapping,
+        ))
+        .with_child((
+            Camera3d::default(),
+            Camera {
+                hdr: true,
+                target: RenderTarget::Image(output_texture_handle.clone()),
                 ..default()
-            });
-        });
+            },
+            tonemapping,
+        ));
 
-    commands.spawn(ImageExportBundle {
-        source: exporter_sources.add(output_texture_handle),
-        settings: ImageExportSettings {
+    commands.spawn((
+        ImageExport(exporter_sources.add(output_texture_handle)),
+        ImageExportSettings {
             extension: "exr".into(),
             ..default()
         },
-    });
+    ));
 
     commands.insert_resource(AmbientLight {
         brightness: 0.0,
@@ -115,21 +111,17 @@ fn setup(
     });
 
     commands.spawn((
-        PointLightBundle {
-            point_light: PointLight {
-                intensity: 100_000_000.0,
-                ..default()
-            },
+        PointLight {
+            intensity: 100_000_000.0,
             ..default()
         },
         Moving,
     ));
 
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(Sphere { radius: 1.0 })),
-        material: materials.add(Color::srgb(1.0, 0.75, 0.5)),
-        ..default()
-    });
+    commands.spawn((
+        Mesh3d(meshes.add(Mesh::from(Sphere { radius: 1.0 }))),
+        MeshMaterial3d(materials.add(Color::srgb(1.0, 0.75, 0.5))),
+    ));
 }
 
 #[derive(Component)]
