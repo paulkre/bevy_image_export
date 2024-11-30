@@ -23,9 +23,9 @@ bytemuck = "1.13"
 
 [features]
 default = ["png"]
-png = ["image/png"]
-jpeg = ["image/jpeg"]
-exr = ["image/exr"]
+png = ["image/png", "bevy/png"]
+jpeg = ["image/jpeg", "bevy/jpeg"]
+exr = ["image/exr", "bevy/exr"]
 
 [dev-dependencies]
 bevy = "0.15"
