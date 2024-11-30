@@ -97,7 +97,7 @@ fn setup(
             },
         ));
 
-    // Spawn the ImageExportBundle to initiate the export of the output texture.
+    // Spawn the ImageExport component to initiate the export of the output texture.
     commands.spawn((
         ImageExport(export_sources.add(output_texture_handle)),
         ImageExportSettings {
