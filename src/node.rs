@@ -4,11 +4,11 @@ use bevy::{
     render::{
         render_asset::RenderAssets,
         render_graph::{Node, NodeRunError, RenderGraphContext, RenderLabel},
-        render_resource::{ImageCopyBuffer, ImageDataLayout},
         renderer::RenderContext,
         texture::GpuImage,
     },
 };
+use wgpu::{TexelCopyBufferInfo, TexelCopyBufferLayout};
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
 pub struct ImageExportLabel;
@@ -31,9 +31,9 @@ impl Node for ImageExportNode {
             {
                 render_context.command_encoder().copy_texture_to_buffer(
                     gpu_image.texture.as_image_copy(),
-                    ImageCopyBuffer {
+                    TexelCopyBufferInfo {
                         buffer: &source.buffer,
-                        layout: ImageDataLayout {
+                        layout: TexelCopyBufferLayout {
                             offset: 0,
                             bytes_per_row: Some(source.padded_bytes_per_row),
                             rows_per_image: None,

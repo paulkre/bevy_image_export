@@ -84,19 +84,18 @@ fn setup(
         images.add(export_texture)
     };
 
-    commands
-        .spawn((
-            Camera3d::default(),
-            Transform::from_translation(5.0 * Vec3::Z),
-        ))
-        .with_child((
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_translation(5.0 * Vec3::Z),
+        children![(
             Camera3d::default(),
             Camera {
                 // Connect the output texture to a camera as a RenderTarget.
-                target: RenderTarget::Image(output_texture_handle.clone()),
+                target: RenderTarget::Image(output_texture_handle.clone().into()),
                 ..default()
             },
-        ));
+        )],
+    ));
 
     // Spawn the ImageExport component to initiate the export of the output texture.
     commands.spawn((

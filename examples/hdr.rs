@@ -76,26 +76,25 @@ fn setup(
     };
 
     let tonemapping = Tonemapping::None;
-    commands
-        .spawn((
+    commands.spawn((
+        Camera3d::default(),
+        Camera {
+            hdr: true,
+            clear_color: ClearColorConfig::Custom(Color::BLACK),
+            ..default()
+        },
+        Transform::from_translation(4.2 * Vec3::Z),
+        tonemapping,
+        children![(
             Camera3d::default(),
             Camera {
                 hdr: true,
-                clear_color: ClearColorConfig::Custom(Color::BLACK),
-                ..default()
-            },
-            Transform::from_translation(4.2 * Vec3::Z),
-            tonemapping,
-        ))
-        .with_child((
-            Camera3d::default(),
-            Camera {
-                hdr: true,
-                target: RenderTarget::Image(output_texture_handle.clone()),
+                target: RenderTarget::Image(output_texture_handle.clone().into()),
                 ..default()
             },
             tonemapping,
-        ));
+        )],
+    ));
 
     commands.spawn((
         ImageExport(exporter_sources.add(output_texture_handle)),

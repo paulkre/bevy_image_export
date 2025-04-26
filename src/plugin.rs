@@ -66,6 +66,7 @@ impl RenderAsset for GpuImageExportSource {
 
     fn prepare_asset(
         source_asset: Self::SourceAsset,
+        _asset_id: AssetId<Self::SourceAsset>,
         (device, images): &mut SystemParamItem<Self::Param>,
     ) -> Result<Self, PrepareAssetError<Self::SourceAsset>> {
         let gpu_image = images.get(&source_asset.0).unwrap();
@@ -296,7 +297,7 @@ impl Plugin for ImageExportPlugin {
             PostUpdate,
             (
                 setup_exporters.in_set(SetupImageExport),
-                apply_deferred.in_set(SetupImageExportFlush),
+                ApplyDeferred.in_set(SetupImageExportFlush),
             ),
         );
 

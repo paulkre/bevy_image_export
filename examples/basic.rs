@@ -37,6 +37,7 @@ fn main() {
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1000.0,
+            affects_lightmapped_meshes: true,
         })
         .add_systems(Startup, setup)
         .add_systems(Update, update)
@@ -78,18 +79,17 @@ fn setup(
         images.add(export_texture)
     };
 
-    commands
-        .spawn((
-            Camera3d::default(),
-            Transform::from_translation(4.2 * Vec3::Z),
-        ))
-        .with_child((
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_translation(4.2 * Vec3::Z),
+        children![(
             Camera3d::default(),
             Camera {
-                target: RenderTarget::Image(output_texture_handle.clone()),
+                target: RenderTarget::Image(output_texture_handle.clone().into()),
                 ..default()
             },
-        ));
+        )],
+    ));
 
     commands.spawn(ImageExport(export_sources.add(output_texture_handle)));
 

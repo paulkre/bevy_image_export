@@ -32,7 +32,6 @@ impl PluginGroup for ImageExportTestPlugins {
         PluginGroupBuilder::start::<Self>()
             .add(PanicHandlerPlugin)
             .add(TransformPlugin)
-            .add(HierarchyPlugin)
             .add(DiagnosticsPlugin)
             .add(InputPlugin)
             .add(AccessibilityPlugin)
@@ -42,13 +41,13 @@ impl PluginGroup for ImageExportTestPlugins {
                 synchronous_pipeline_compilation: true,
                 ..Default::default()
             })
+            .add(PickingPlugin::default())
             .add(texture::ImagePlugin::default())
             .add(CorePipelinePlugin)
-            .add(SpritePlugin { add_picking: false })
+            .add(SpritePlugin)
             .add(TextPlugin)
             .add(UiPlugin {
-                add_picking: false,
-                ..default()
+                enable_rendering: false,
             })
             .add(PbrPlugin::default())
     }
@@ -103,6 +102,7 @@ fn test_basic() -> anyhow::Result<()> {
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1000.0,
+            affects_lightmapped_meshes: true,
         })
         .insert_resource(ImageCount(image_count))
         .add_systems(Startup, setup)
@@ -156,19 +156,18 @@ fn setup(
         images.add(export_texture)
     };
 
-    commands
-        .spawn((
-            Camera3d::default(),
-            Transform::from_translation(4.2 * Vec3::Z),
-        ))
-        .with_child((
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_translation(4.2 * Vec3::Z),
+        children![(
             Camera3d::default(),
             Camera {
-                target: RenderTarget::Image(output_texture_handle.clone()),
+                target: RenderTarget::Image(output_texture_handle.clone().into()),
                 clear_color: ClearColorConfig::Custom(Color::BLACK),
                 ..default()
             },
-        ));
+        )],
+    ));
 
     commands.spawn(ImageExport(export_sources.add(output_texture_handle)));
 
@@ -193,6 +192,6 @@ fn update(
     }
     *frame += 1;
     if *frame >= image_count.0 {
-        app_exit_events.send(AppExit::Success);
+        app_exit_events.write(AppExit::Success);
     }
 }
