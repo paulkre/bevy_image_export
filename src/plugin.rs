@@ -6,7 +6,6 @@ use bevy::{
     },
     prelude::*,
     render::{
-        camera::CameraUpdateSystem,
         extract_component::{ExtractComponent, ExtractComponentPlugin},
         graph::CameraDriverLabel,
         render_asset::{
@@ -272,34 +271,22 @@ pub struct ImageExportPlugin {
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum ImageExportSystems {
-    SetupImageExport,
-    SetupImageExportFlush,
+    ImageExportSetup,
 }
 
 impl Plugin for ImageExportPlugin {
     fn build(&self, app: &mut App) {
         use ImageExportSystems::*;
 
-        app.configure_sets(
-            PostUpdate,
-            (SetupImageExport, SetupImageExportFlush)
-                .chain()
-                .before(CameraUpdateSystem),
-        )
-        .register_type::<ImageExportSource>()
-        .init_asset::<ImageExportSource>()
-        .register_asset_reflect::<ImageExportSource>()
-        .add_plugins((
-            RenderAssetPlugin::<GpuImageExportSource>::default(),
-            ExtractComponentPlugin::<ImageExportSettings>::default(),
-        ))
-        .add_systems(
-            PostUpdate,
-            (
-                setup_exporters.in_set(SetupImageExport),
-                ApplyDeferred.in_set(SetupImageExportFlush),
-            ),
-        );
+        app.configure_sets(PostUpdate, ImageExportSetup)
+            .register_type::<ImageExportSource>()
+            .init_asset::<ImageExportSource>()
+            .register_asset_reflect::<ImageExportSource>()
+            .add_plugins((
+                RenderAssetPlugin::<GpuImageExportSource>::default(),
+                ExtractComponentPlugin::<ImageExportSettings>::default(),
+            ))
+            .add_systems(PostUpdate, setup_exporters.in_set(ImageExportSetup));
 
         let render_app = app.sub_app_mut(RenderApp);
 
