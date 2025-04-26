@@ -1,4 +1,7 @@
-use crate::node::{ImageExportLabel, ImageExportNode};
+use crate::{
+    node::{ImageExportLabel, ImageExportNode},
+    storage::save_image,
+};
 use bevy::{
     ecs::{
         query::QueryItem,
@@ -18,12 +21,7 @@ use bevy::{
         Render, RenderApp, RenderSet,
     },
 };
-use bytemuck::AnyBitPattern;
 use futures::channel::oneshot;
-use image::{
-    error::UnsupportedErrorKind, EncodableLayout, ImageBuffer, ImageError, Pixel,
-    PixelWithColorType, Rgba,
-};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -171,7 +169,7 @@ fn save_buffer_to_disk(
     *frame_id = frame_id.wrapping_add(1);
     for (export, settings, start_frame) in &export_bundles {
         if let Some(gpu_source) = sources.get(&export.0) {
-            let mut image_bytes = {
+            let image_bytes = {
                 let slice = gpu_source.buffer.slice(..);
 
                 {
@@ -199,62 +197,17 @@ fn save_buffer_to_disk(
 
             export_threads.count.fetch_add(1, Ordering::SeqCst);
             std::thread::spawn(move || {
-                if bytes_per_row != padded_bytes_per_row {
-                    let mut unpadded_bytes =
-                        Vec::<u8>::with_capacity(source_size.height as usize * bytes_per_row);
-
-                    for padded_row in image_bytes.chunks(padded_bytes_per_row) {
-                        unpadded_bytes.extend_from_slice(&padded_row[..bytes_per_row]);
-                    }
-
-                    image_bytes = unpadded_bytes;
-                }
-
-                let path = format!(
-                    "{}/{:05}.{}",
-                    settings.output_dir, frame_id, settings.extension
-                );
-
-                std::fs::create_dir_all(&settings.output_dir)
-                    .expect("Output path could not be created");
-
-                fn save_buffer<P: Pixel + PixelWithColorType>(
-                    image_bytes: &[P::Subpixel],
-                    source_size: &Extent3d,
-                    path: &str,
-                ) where
-                    P::Subpixel: AnyBitPattern,
-                    [P::Subpixel]: EncodableLayout,
-                {
-                    match ImageBuffer::<P, _>::from_raw(
-                        source_size.width,
-                        source_size.height,
-                        image_bytes,
-                    ) {
-                        Some(buffer) => {
-                            if let Err(ImageError::Unsupported(err)) = buffer.save(path) {
-                                if let UnsupportedErrorKind::Format(hint) = err.kind() {
-                                    println!("Image format {} is not supported", hint);
-                                }
-                            }
-                        }
-                        None => {
-                            println!("Failed creating image buffer for '{}'", path);
-                        }
-                    }
-                }
-
-                match settings.extension.as_str() {
-                    "exr" => {
-                        save_buffer::<Rgba<f32>>(
-                            bytemuck::cast_slice(&image_bytes),
-                            &source_size,
-                            path.as_str(),
-                        );
-                    }
-                    _ => {
-                        save_buffer::<Rgba<u8>>(&image_bytes, &source_size, path.as_str());
-                    }
+                if let Err(err) = save_image(
+                    &settings.output_dir,
+                    &settings.extension,
+                    image_bytes,
+                    bytes_per_row,
+                    padded_bytes_per_row,
+                    source_size.width,
+                    source_size.height,
+                    frame_id,
+                ) {
+                    error!({ error = %err }, "failed saving image to disk");
                 }
 
                 export_threads.count.fetch_sub(1, Ordering::SeqCst);
