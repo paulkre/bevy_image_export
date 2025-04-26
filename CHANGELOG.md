@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.0](https://github.com/paulkre/bevy_image_export/compare/v0.12.0...v0.13.0) (2025-04-26)
+
+### Breaking Changes
+
+- Updated Bevy to 0.16.
+- Remove usage of `ApplyDeferred` system set.
+
+### Bug Fixes
+
+- Improved error handling for storing image filies.
+
 ## [0.12.0](https://github.com/paulkre/bevy_image_export/compare/v0.11.0...v0.12.0) (2024-11-30)
 
 ### Breaking Changes
