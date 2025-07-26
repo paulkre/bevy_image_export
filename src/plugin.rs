@@ -239,7 +239,8 @@ impl Plugin for ImageExportPlugin {
                 RenderAssetPlugin::<GpuImageExportSource>::default(),
                 ExtractComponentPlugin::<ImageExportSettings>::default(),
             ))
-            .add_systems(PostUpdate, setup_exporters.in_set(ImageExportSetup));
+            .add_systems(PostUpdate, setup_exporters.in_set(ImageExportSetup))
+            .insert_resource(self.threads.clone());
 
         let render_app = app.sub_app_mut(RenderApp);
 
