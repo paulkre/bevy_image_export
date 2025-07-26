@@ -4,5 +4,5 @@ mod storage;
 
 pub use plugin::{
     GpuImageExportSource, ImageExport, ImageExportPlugin, ImageExportSettings, ImageExportSource,
-    ImageExportSystems,
+    ImageExportSystems, ExportThreads
 };
