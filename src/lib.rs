@@ -3,6 +3,6 @@ mod plugin;
 mod storage;
 
 pub use plugin::{
-    GpuImageExportSource, ImageExport, ImageExportPlugin, ImageExportSettings, ImageExportSource,
-    ImageExportSystems,
+    ExportThreads, GpuImageExportSource, ImageExport, ImageExportPlugin, ImageExportSettings,
+    ImageExportSource, ImageExportSystems,
 };

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Bug Fixes
+
+- Exposed `ExportThreads` type to allow using its state in user systems.
+
 ## [0.13.0](https://github.com/paulkre/bevy_image_export/compare/v0.12.0...v0.13.0) (2025-04-26)
 
 ### Breaking Changes
