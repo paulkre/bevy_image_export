@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Features
+
+- Added `ExportThreads::thread_count` and `ExportThreads::is_finished` methods.
+
 ### Bug Fixes
 
 - Exposed `ExportThreads` type to allow using its state in user systems.

@@ -147,15 +147,29 @@ pub struct ImageExport(pub Handle<ImageExportSource>);
 
 #[derive(Default, Clone, Resource)]
 pub struct ExportThreads {
-    pub count: Arc<AtomicUsize>,
+    count: Arc<AtomicUsize>,
 }
 
 impl ExportThreads {
+    /// Returns the number of threads currently running.
+    pub fn thread_count(&self) -> usize {
+        self.count.load(Ordering::SeqCst)
+    }
+
+    /// Checks if all threads have finished.
+    pub fn is_finished(&self) -> bool {
+        self.thread_count() == 0
+    }
+
     /// Blocks the main thread until all frames have been saved successfully.
     pub fn finish(&self) {
-        while self.count.load(Ordering::SeqCst) > 0 {
+        while !self.is_finished() {
             std::thread::sleep(std::time::Duration::from_secs_f32(0.25));
         }
+    }
+
+    pub(crate) fn report_thread_started(&self) {
+        self.count.fetch_add(1, Ordering::SeqCst);
     }
 }
 
@@ -195,7 +209,7 @@ fn save_buffer_to_disk(
             let source_size = gpu_source.source_size;
             let export_threads = export_threads.clone();
 
-            export_threads.count.fetch_add(1, Ordering::SeqCst);
+            export_threads.report_thread_started();
             std::thread::spawn(move || {
                 if let Err(err) = save_image(
                     &settings.output_dir,
