@@ -1,3 +1,6 @@
+mod common;
+
+use crate::common::graceperiod::{GracePeriodPlugin, GracefulFrameCount};
 use bevy::{
     camera::RenderTarget,
     core_pipeline::tonemapping::Tonemapping,
@@ -34,22 +37,50 @@ fn main() {
                     synchronous_pipeline_compilation: true,
                     ..default()
                 }),
+            GracePeriodPlugin::default(),
             export_plugin,
         ))
-        .add_systems(Startup, setup)
-        .add_systems(Update, update)
+        .add_systems(Startup, setup_scene)
+        .add_systems(Update, (setup_camera, update).chain())
         .run();
 
     export_threads.finish();
 }
 
-fn setup(
+fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    commands.insert_resource(AmbientLight {
+        brightness: 0.0,
+        ..default()
+    });
+
+    commands.spawn((
+        PointLight {
+            intensity: 100_000_000.0,
+            ..default()
+        },
+        Moving,
+    ));
+
+    commands.spawn((
+        Mesh3d(meshes.add(Mesh::from(Sphere { radius: 1.0 }))),
+        MeshMaterial3d(materials.add(Color::srgb(1.0, 0.75, 0.5))),
+    ));
+}
+
+fn setup_camera(
+    mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
     mut exporter_sources: ResMut<Assets<ImageExportSource>>,
+    frame_count: Res<GracefulFrameCount>,
 ) {
+    if frame_count.frame() != 1 {
+        return;
+    }
+
     let output_texture_handle = {
         let size = Extent3d {
             width: WIDTH,
@@ -104,31 +135,16 @@ fn setup(
             ..default()
         },
     ));
-
-    commands.insert_resource(AmbientLight {
-        brightness: 0.0,
-        ..default()
-    });
-
-    commands.spawn((
-        PointLight {
-            intensity: 100_000_000.0,
-            ..default()
-        },
-        Moving,
-    ));
-
-    commands.spawn((
-        Mesh3d(meshes.add(Mesh::from(Sphere { radius: 1.0 }))),
-        MeshMaterial3d(materials.add(Color::srgb(1.0, 0.75, 0.5))),
-    ));
 }
 
 #[derive(Component)]
 struct Moving;
-fn update(mut transforms: Query<&mut Transform, With<Moving>>, mut frame: Local<u32>) {
-    let theta = *frame as f32 * 0.25 * PI;
-    *frame += 1;
+fn update(
+    mut transforms: Query<&mut Transform, With<Moving>>,
+    frame_count: Res<GracefulFrameCount>,
+) {
+    let frame = frame_count.frame().wrapping_sub(1);
+    let theta = frame as f32 * 0.25 * PI;
     for mut transform in &mut transforms {
         transform.translation = 10.0 * Vec3::new(theta.sin(), theta.cos(), 0.5);
     }

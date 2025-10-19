@@ -112,12 +112,6 @@ fn setup(
 }
 ```
 
-## Notes
-
-### Bevy 0.17
-
-Since the release of 0.17, rendering in Bevy does not start on the first frame anymore. In fact, the exact frame that rendering starts on does not seem to be predictable. This means that systems need to wait for a couple of frames after the app starts before they can predictably start the export process by spawning the `ImageExport` component.
-
 ## Video file export
 
 With [FFmpeg](https://ffmpeg.org) installed, you can run the following command to convert your exported image sequence to an MP4 video file:

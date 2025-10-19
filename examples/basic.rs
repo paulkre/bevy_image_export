@@ -1,3 +1,6 @@
+mod common;
+
+use crate::common::graceperiod::{GracePeriodPlugin, GracefulFrameCount};
 use bevy::{
     camera::RenderTarget,
     prelude::*,
@@ -32,6 +35,7 @@ fn main() {
                     synchronous_pipeline_compilation: true,
                     ..default()
                 }),
+            GracePeriodPlugin::default(),
             export_plugin,
         ))
         .insert_resource(AmbientLight {
@@ -39,8 +43,7 @@ fn main() {
             brightness: 1000.0,
             affects_lightmapped_meshes: true,
         })
-        .add_systems(Startup, setup)
-        .add_systems(Update, update)
+        .add_systems(Update, (setup, update).chain())
         .run();
 
     export_threads.finish();
@@ -52,7 +55,12 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut images: ResMut<Assets<Image>>,
     mut export_sources: ResMut<Assets<ImageExportSource>>,
+    frame_count: Res<GracefulFrameCount>,
 ) {
+    if frame_count.frame() != 1 {
+        return;
+    }
+
     let output_texture_handle = {
         let size = Extent3d {
             width: WIDTH,
@@ -103,9 +111,12 @@ fn setup(
 #[derive(Component)]
 struct Moving;
 
-fn update(mut transforms: Query<&mut Transform, With<Moving>>, mut frame: Local<u32>) {
-    let theta = *frame as f32 * 0.25 * PI;
-    *frame += 1;
+fn update(
+    mut transforms: Query<&mut Transform, With<Moving>>,
+    frame_count: Res<GracefulFrameCount>,
+) {
+    let frame = frame_count.frame().wrapping_sub(1);
+    let theta = frame as f32 * 0.25 * PI;
     for mut transform in &mut transforms {
         transform.translation = Vec3::new(theta.sin(), theta.cos(), 0.0);
     }
