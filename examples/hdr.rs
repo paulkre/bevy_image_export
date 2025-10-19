@@ -1,11 +1,12 @@
 use bevy::{
+    camera::RenderTarget,
     core_pipeline::tonemapping::Tonemapping,
     prelude::*,
     render::{
-        camera::RenderTarget,
         render_resource::{
             Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
         },
+        view::Hdr,
         RenderPlugin,
     },
 };
@@ -24,7 +25,7 @@ fn main() {
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
-                        resolution: (WIDTH as f32, HEIGHT as f32).into(),
+                        resolution: (WIDTH, HEIGHT).into(),
                         ..default()
                     }),
                     ..default()
@@ -78,8 +79,8 @@ fn setup(
     let tonemapping = Tonemapping::None;
     commands.spawn((
         Camera3d::default(),
+        Hdr,
         Camera {
-            hdr: true,
             clear_color: ClearColorConfig::Custom(Color::BLACK),
             ..default()
         },
@@ -87,8 +88,8 @@ fn setup(
         tonemapping,
         children![(
             Camera3d::default(),
+            Hdr,
             Camera {
-                hdr: true,
                 target: RenderTarget::Image(output_texture_handle.clone().into()),
                 ..default()
             },

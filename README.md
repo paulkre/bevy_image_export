@@ -34,7 +34,7 @@ fn main() {
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
-                        resolution: (WIDTH as f32, HEIGHT as f32).into(),
+                        resolution: (WIDTH, HEIGHT).into(),
                         ..default()
                     }),
                     ..default()
@@ -110,6 +110,12 @@ fn setup(
     ));
 }
 ```
+
+## Notes
+
+### Bevy 0.17
+
+Since the release of 0.17, rendering in Bevy does not start on the first frame anymore. In fact, the exact frame that rendering starts on does not seem to be predictable. This means that systems need to wait for a couple of frames after the app starts before they can predictably start the export process by spawning the `ImageExport` component.
 
 ## Video file export
 

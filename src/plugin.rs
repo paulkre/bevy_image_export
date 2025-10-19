@@ -3,22 +3,18 @@ use crate::{
     storage::save_image,
 };
 use bevy::{
-    ecs::{
-        query::QueryItem,
-        system::{lifetimeless::SRes, SystemParamItem},
-    },
+    asset::RenderAssetUsages,
+    ecs::system::{lifetimeless::SRes, SystemParamItem},
     prelude::*,
     render::{
         extract_component::{ExtractComponent, ExtractComponentPlugin},
         graph::CameraDriverLabel,
-        render_asset::{
-            PrepareAssetError, RenderAsset, RenderAssetPlugin, RenderAssetUsages, RenderAssets,
-        },
+        render_asset::{PrepareAssetError, RenderAsset, RenderAssetPlugin, RenderAssets},
         render_graph::RenderGraph,
         render_resource::{Buffer, BufferDescriptor, BufferUsages, Extent3d, MapMode},
         renderer::RenderDevice,
         texture::GpuImage,
-        Render, RenderApp, RenderSet,
+        Render, RenderApp, RenderSystems,
     },
 };
 use futures::channel::oneshot;
@@ -26,7 +22,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use wgpu::Maintain;
+use wgpu::PollType;
 
 #[derive(Asset, Reflect, Clone, Default)]
 pub struct ImageExportSource(pub Handle<Image>);
@@ -37,7 +33,7 @@ impl From<Handle<Image>> for ImageExportSource {
     }
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, ExtractComponent, Clone, Debug)]
 pub struct ImageExportSettings {
     /// The directory that image files will be saved to.
     pub output_dir: String,
@@ -65,6 +61,7 @@ impl RenderAsset for GpuImageExportSource {
         source_asset: Self::SourceAsset,
         _asset_id: AssetId<Self::SourceAsset>,
         (device, images): &mut SystemParamItem<Self::Param>,
+        _previous_asset: Option<&Self>,
     ) -> Result<Self, PrepareAssetError<Self::SourceAsset>> {
         let gpu_image = images.get(&source_asset.0).unwrap();
 
@@ -96,7 +93,7 @@ impl RenderAsset for GpuImageExportSource {
     }
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, ExtractComponent, Clone, Debug)]
 pub struct ImageExportStartFrame(u64);
 
 impl Default for ImageExportSettings {
@@ -105,26 +102,6 @@ impl Default for ImageExportSettings {
             output_dir: "out".into(),
             extension: "png".into(),
         }
-    }
-}
-
-impl ExtractComponent for ImageExportSettings {
-    type QueryData = (
-        &'static Self,
-        &'static ImageExport,
-        &'static ImageExportStartFrame,
-    );
-    type QueryFilter = ();
-    type Out = (Self, ImageExport, ImageExportStartFrame);
-
-    fn extract_component(
-        (settings, export, start_frame): QueryItem<'_, Self::QueryData>,
-    ) -> Option<Self::Out> {
-        Some((
-            settings.clone(),
-            ImageExport(export.0.clone_weak()),
-            start_frame.clone(),
-        ))
     }
 }
 
@@ -141,7 +118,7 @@ fn setup_exporters(
     }
 }
 
-#[derive(Component, Clone, Default)]
+#[derive(Component, ExtractComponent, Clone, Default, Debug)]
 #[require(ImageExportSettings)]
 pub struct ImageExport(pub Handle<ImageExportSource>);
 
@@ -193,7 +170,10 @@ fn save_buffer_to_disk(
                         mapping_tx.send(res).unwrap();
                     });
 
-                    render_device.poll(Maintain::Wait);
+                    if render_device.poll(PollType::Wait).is_err() {
+                        break;
+                    }
+
                     futures_lite::future::block_on(mapping_rx).unwrap().unwrap();
                 }
 
@@ -251,7 +231,9 @@ impl Plugin for ImageExportPlugin {
             .register_asset_reflect::<ImageExportSource>()
             .add_plugins((
                 RenderAssetPlugin::<GpuImageExportSource>::default(),
+                ExtractComponentPlugin::<ImageExport>::default(),
                 ExtractComponentPlugin::<ImageExportSettings>::default(),
+                ExtractComponentPlugin::<ImageExportStartFrame>::default(),
             ))
             .add_systems(PostUpdate, setup_exporters.in_set(ImageExportSetup));
 
@@ -262,8 +244,8 @@ impl Plugin for ImageExportPlugin {
             .add_systems(
                 Render,
                 save_buffer_to_disk
-                    .after(RenderSet::Render)
-                    .before(RenderSet::Cleanup),
+                    .after(RenderSystems::Render)
+                    .before(RenderSystems::Cleanup),
             );
 
         let mut graph = render_app

@@ -1,23 +1,14 @@
 use anyhow::anyhow;
 use bevy::{
-    a11y::AccessibilityPlugin,
-    app::{PanicHandlerPlugin, PluginGroupBuilder},
-    core_pipeline::CorePipelinePlugin,
-    diagnostic::DiagnosticsPlugin,
-    input::InputPlugin,
-    pbr::PbrPlugin,
+    app::plugin_group,
+    camera::RenderTarget,
     prelude::*,
     render::{
-        camera::RenderTarget,
         render_resource::{
             Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
         },
-        texture, RenderPlugin,
+        RenderPlugin,
     },
-    scene::ScenePlugin,
-    sprite::SpritePlugin,
-    text::TextPlugin,
-    ui::UiPlugin,
 };
 use bevy_image_export::{ImageExport, ImageExportPlugin, ImageExportSource};
 use std::f32::consts::PI;
@@ -25,31 +16,30 @@ use std::f32::consts::PI;
 const WIDTH: u32 = 16;
 const HEIGHT: u32 = 16;
 
-pub struct ImageExportTestPlugins;
+/// Number of frames to wait before starting the export. This is necessary because Bevy doesn't
+/// predictably start rendering on the first frame.
+const STARTUP_FRAMES: u32 = 2;
 
-impl PluginGroup for ImageExportTestPlugins {
-    fn build(self) -> PluginGroupBuilder {
-        PluginGroupBuilder::start::<Self>()
-            .add(PanicHandlerPlugin)
-            .add(TransformPlugin)
-            .add(DiagnosticsPlugin)
-            .add(InputPlugin)
-            .add(AccessibilityPlugin)
-            .add(AssetPlugin::default())
-            .add(ScenePlugin)
-            .add(RenderPlugin {
-                synchronous_pipeline_compilation: true,
-                ..Default::default()
-            })
-            .add(PickingPlugin::default())
-            .add(texture::ImagePlugin::default())
-            .add(CorePipelinePlugin)
-            .add(SpritePlugin)
-            .add(TextPlugin)
-            .add(UiPlugin {
-                enable_rendering: false,
-            })
-            .add(PbrPlugin::default())
+plugin_group! {
+    pub struct TestPlugins {
+        bevy::app:::PanicHandlerPlugin,
+        bevy::log:::LogPlugin,
+        bevy::app:::TaskPoolPlugin,
+        bevy::diagnostic:::FrameCountPlugin,
+        bevy::time:::TimePlugin,
+        bevy::transform:::TransformPlugin,
+        bevy::app:::ScheduleRunnerPlugin,
+        bevy::window:::WindowPlugin,
+        bevy::asset:::AssetPlugin,
+        bevy::render:::RenderPlugin,
+        bevy::image:::ImagePlugin,
+        bevy::mesh:::MeshPlugin,
+        bevy::camera:::CameraPlugin,
+        bevy::light:::LightPlugin,
+        bevy::render::pipelined_rendering:::PipelinedRenderingPlugin,
+        bevy::core_pipeline:::CorePipelinePlugin,
+        bevy::post_process:::PostProcessPlugin,
+        bevy::pbr:::PbrPlugin,
     }
 }
 
@@ -77,7 +67,7 @@ fn assert_image_eq(a: &[u8], b: &[u8]) -> anyhow::Result<()> {
     Ok(())
 }
 
-#[derive(Resource)]
+#[derive(Resource, Debug)]
 struct ImageCount(u32);
 
 #[test]
@@ -88,15 +78,18 @@ fn test_basic() -> anyhow::Result<()> {
 
     App::new()
         .add_plugins((
-            MinimalPlugins,
-            ImageExportTestPlugins,
-            WindowPlugin {
-                primary_window: Some(Window {
-                    resolution: (WIDTH as f32, HEIGHT as f32).into(),
+            TestPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resolution: (WIDTH, HEIGHT).into(),
+                        ..default()
+                    }),
                     ..default()
+                })
+                .set(RenderPlugin {
+                    synchronous_pipeline_compilation: true,
+                    ..Default::default()
                 }),
-                ..default()
-            },
             export_plugin,
         ))
         .insert_resource(AmbientLight {
@@ -105,8 +98,7 @@ fn test_basic() -> anyhow::Result<()> {
             affects_lightmapped_meshes: true,
         })
         .insert_resource(ImageCount(image_count))
-        .add_systems(Startup, setup)
-        .add_systems(Update, update)
+        .add_systems(Update, (setup, update).chain())
         .run();
 
     export_threads.finish();
@@ -129,7 +121,14 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut images: ResMut<Assets<Image>>,
     mut export_sources: ResMut<Assets<ImageExportSource>>,
+    mut frame: Local<u32>,
 ) {
+    *frame += 1;
+    let frame = *frame as i32 - STARTUP_FRAMES as i32;
+    if frame != 1 {
+        return;
+    }
+
     let output_texture_handle = {
         let size = Extent3d {
             width: WIDTH,
@@ -182,16 +181,22 @@ fn setup(
 struct Moving;
 fn update(
     image_count: Res<ImageCount>,
-    mut app_exit_events: EventWriter<AppExit>,
+    mut app_exit_events: MessageWriter<AppExit>,
     mut frame: Local<u32>,
     mut transforms: Query<&mut Transform, With<Moving>>,
 ) {
-    let theta = *frame as f32 * 0.25 * PI;
+    *frame += 1;
+    let frame = *frame as i32 - STARTUP_FRAMES as i32;
+    if frame < 1 {
+        return;
+    }
+
+    let theta = (frame - 1) as f32 * 0.25 * PI;
     for mut transform in &mut transforms {
         transform.translation = Vec3::new(theta.sin(), theta.cos(), 0.0);
     }
-    *frame += 1;
-    if *frame >= image_count.0 {
+
+    if frame >= (image_count.0 as i32) {
         app_exit_events.write(AppExit::Success);
     }
 }

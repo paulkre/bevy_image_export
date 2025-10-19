@@ -1,7 +1,7 @@
 use bevy::{
+    camera::RenderTarget,
     prelude::*,
     render::{
-        camera::RenderTarget,
         render_resource::{
             Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
         },
@@ -23,7 +23,7 @@ fn main() {
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
-                        resolution: (WIDTH as f32, HEIGHT as f32).into(),
+                        resolution: (WIDTH, HEIGHT).into(),
                         ..default()
                     }),
                     ..default()
