@@ -63,7 +63,9 @@ impl RenderAsset for GpuImageExportSource {
         (device, images): &mut SystemParamItem<Self::Param>,
         _previous_asset: Option<&Self>,
     ) -> Result<Self, PrepareAssetError<Self::SourceAsset>> {
-        let gpu_image = images.get(&source_asset.0).unwrap();
+        let Some(gpu_image) = images.get(&source_asset.0) else {
+            return Err(PrepareAssetError::RetryNextUpdate(source_asset));
+        };
 
         let size = gpu_image.texture.size();
         let format = &gpu_image.texture_format;
