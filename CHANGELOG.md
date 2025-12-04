@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.1](https://github.com/paulkre/bevy_image_export/compare/v0.15.0...v0.15.1) (2025-12-04)
+
+### Bug Fixes
+
+- Fixed a panic that occurred when an image render asset was used before it was ready.
+
 ## [0.15.0](https://github.com/paulkre/bevy_image_export/compare/v0.14.0...v0.15.0) (2025-10-19)
 
 ### Breaking Changes
