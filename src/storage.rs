@@ -1,4 +1,3 @@
-use bevy::prelude::error;
 use bytemuck::AnyBitPattern;
 use image::{EncodableLayout, ImageBuffer, Pixel, PixelWithColorType, Rgba};
 use std::fs::create_dir_all;

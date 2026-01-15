@@ -38,7 +38,7 @@ fn main() {
             GracePeriodPlugin::default(),
             export_plugin,
         ))
-        .insert_resource(AmbientLight {
+        .insert_resource(GlobalAmbientLight {
             color: Color::WHITE,
             brightness: 1000.0,
             affects_lightmapped_meshes: true,
@@ -92,10 +92,8 @@ fn setup(
         Transform::from_translation(4.2 * Vec3::Z),
         children![(
             Camera3d::default(),
-            Camera {
-                target: RenderTarget::Image(output_texture_handle.clone().into()),
-                ..default()
-            },
+            RenderTarget::Image(output_texture_handle.clone().into()),
+            Camera::default(),
         )],
     ));
 

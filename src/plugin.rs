@@ -54,7 +54,7 @@ impl RenderAsset for GpuImageExportSource {
     type Param = (SRes<RenderDevice>, SRes<RenderAssets<GpuImage>>);
 
     fn asset_usage(_: &Self::SourceAsset) -> RenderAssetUsages {
-        RenderAssetUsages::RENDER_WORLD
+        RenderAssetUsages::default()
     }
 
     fn prepare_asset(
@@ -172,7 +172,13 @@ fn save_buffer_to_disk(
                         mapping_tx.send(res).unwrap();
                     });
 
-                    if render_device.poll(PollType::Wait).is_err() {
+                    if render_device
+                        .poll(PollType::Wait {
+                            submission_index: None,
+                            timeout: None,
+                        })
+                        .is_err()
+                    {
                         break;
                     }
 
