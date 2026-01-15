@@ -91,11 +91,9 @@ fn setup(
         Transform::from_translation(5.0 * Vec3::Z),
         children![(
             Camera3d::default(),
-            Camera {
-                // Connect the output texture to a camera as a RenderTarget.
-                target: RenderTarget::Image(output_texture_handle.clone().into()),
-                ..default()
-            },
+            // Connect the output texture to a camera as a RenderTarget.
+            RenderTarget::Image(output_texture_handle.clone().into()),
+            Camera::default(),
         )],
     ));
 
