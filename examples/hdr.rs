@@ -52,7 +52,7 @@ fn setup_scene(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands.insert_resource(AmbientLight {
+    commands.insert_resource(GlobalAmbientLight {
         brightness: 0.0,
         ..default()
     });
@@ -120,10 +120,8 @@ fn setup_camera(
         children![(
             Camera3d::default(),
             Hdr,
-            Camera {
-                target: RenderTarget::Image(output_texture_handle.clone().into()),
-                ..default()
-            },
+            RenderTarget::Image(output_texture_handle.clone().into()),
+            Camera::default(),
             tonemapping,
         )],
     ));
