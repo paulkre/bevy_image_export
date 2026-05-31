@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased](https://github.com/paulkre/bevy_image_export/compare/v0.16.0...HEAD)
+
+### Bug Fixes
+
+- Replaced the `trace` Bevy feature with `bevy_log`, which provides the logging macros without forcing the `profiling` crate's `profile-with-tracing` backend ([#13](https://github.com/paulkre/bevy_image_export/issues/13)).
+
 ## [0.16.0](https://github.com/paulkre/bevy_image_export/compare/v0.15.1...v0.16.0) (2026-01-16)
 
 ### Breaking Changes
