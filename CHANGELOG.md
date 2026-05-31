@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased](https://github.com/paulkre/bevy_image_export/compare/v0.16.0...HEAD)
+## [0.16.1](https://github.com/paulkre/bevy_image_export/compare/v0.16.0...v0.16.1) (2026-05-31)
 
 ### Bug Fixes
 
