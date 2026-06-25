@@ -9,6 +9,7 @@ A [Bevy](https://bevyengine.org/) plugin for rendering image sequences.
 
 | Bevy Version | Crate Version  |
 | ------------ | -------------- |
+| `0.19`       | `0.17`         |
 | `0.18`       | `0.16`         |
 | `0.17`       | `0.15`         |
 | `0.16`       | `0.13`, `0.14` |
