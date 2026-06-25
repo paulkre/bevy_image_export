@@ -36,9 +36,11 @@ plugin_group! {
         bevy::mesh:::MeshPlugin,
         bevy::camera:::CameraPlugin,
         bevy::light:::LightPlugin,
+        bevy::gizmos:::GizmoPlugin,
         bevy::render::pipelined_rendering:::PipelinedRenderingPlugin,
         bevy::core_pipeline:::CorePipelinePlugin,
         bevy::post_process:::PostProcessPlugin,
+        bevy::gltf:::GltfPlugin,
         bevy::pbr:::PbrPlugin,
     }
 }

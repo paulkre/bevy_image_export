@@ -1,18 +1,13 @@
-use crate::{
-    node::{ImageExportLabel, ImageExportNode},
-    storage::save_image,
-};
+use crate::storage::save_image;
 use bevy::{
     asset::RenderAssetUsages,
     ecs::system::{lifetimeless::SRes, SystemParamItem},
     prelude::*,
     render::{
         extract_component::{ExtractComponent, ExtractComponentPlugin},
-        graph::CameraDriverLabel,
         render_asset::{PrepareAssetError, RenderAsset, RenderAssetPlugin, RenderAssets},
-        render_graph::RenderGraph,
         render_resource::{Buffer, BufferDescriptor, BufferUsages, Extent3d, MapMode},
-        renderer::RenderDevice,
+        renderer::{RenderContext, RenderDevice, RenderGraph, RenderGraphSystems},
         texture::GpuImage,
         Render, RenderApp, RenderSystems,
     },
@@ -22,7 +17,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use wgpu::PollType;
+use wgpu::{PollType, TexelCopyBufferInfo, TexelCopyBufferLayout};
 
 #[derive(Asset, Reflect, Clone, Default)]
 pub struct ImageExportSource(pub Handle<Image>);
@@ -68,7 +63,7 @@ impl RenderAsset for GpuImageExportSource {
         };
 
         let size = gpu_image.texture.size();
-        let format = &gpu_image.texture_format;
+        let format = gpu_image.texture_descriptor.format;
         let bytes_per_row =
             (size.width / format.block_dimensions().0) * format.block_copy_size(None).unwrap();
         let padded_bytes_per_row =
@@ -218,6 +213,29 @@ fn save_buffer_to_disk(
     }
 }
 
+fn copy_images_to_buffers(
+    mut render_context: RenderContext,
+    sources: Res<RenderAssets<GpuImageExportSource>>,
+    gpu_images: Res<RenderAssets<GpuImage>>,
+) {
+    for (_, source) in sources.iter() {
+        if let Some(gpu_image) = gpu_images.get(&source.source_handle) {
+            render_context.command_encoder().copy_texture_to_buffer(
+                gpu_image.texture.as_image_copy(),
+                TexelCopyBufferInfo {
+                    buffer: &source.buffer,
+                    layout: TexelCopyBufferLayout {
+                        offset: 0,
+                        bytes_per_row: Some(source.padded_bytes_per_row),
+                        rows_per_image: None,
+                    },
+                },
+                source.source_size,
+            );
+        }
+    }
+}
+
 /// Plugin enabling the generation of image sequences.
 #[derive(Default)]
 pub struct ImageExportPlugin {
@@ -256,12 +274,11 @@ impl Plugin for ImageExportPlugin {
                     .before(RenderSystems::Cleanup),
             );
 
-        let mut graph = render_app
-            .world_mut()
-            .get_resource_mut::<RenderGraph>()
-            .unwrap();
-
-        graph.add_node(ImageExportLabel, ImageExportNode);
-        graph.add_node_edge(CameraDriverLabel, ImageExportLabel);
+        render_app.add_systems(
+            RenderGraph,
+            copy_images_to_buffers
+                .after(RenderGraphSystems::Render)
+                .before(RenderGraphSystems::Submit),
+        );
     }
 }

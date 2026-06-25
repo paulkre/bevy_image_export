@@ -2,14 +2,13 @@ mod common;
 
 use crate::common::graceperiod::{GracePeriodPlugin, GracefulFrameCount};
 use bevy::{
-    camera::RenderTarget,
+    camera::{Hdr, RenderTarget},
     core_pipeline::tonemapping::Tonemapping,
     prelude::*,
     render::{
         render_resource::{
             Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
         },
-        view::Hdr,
         RenderPlugin,
     },
 };
