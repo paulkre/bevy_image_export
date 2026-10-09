@@ -29,6 +29,7 @@ impl From<Handle<Image>> for ImageExportSource {
 }
 
 #[derive(Component, ExtractComponent, Clone, Debug)]
+#[extract_app(RenderApp)]
 pub struct ImageExportSettings {
     /// The directory that image files will be saved to.
     pub output_dir: String,
@@ -91,6 +92,7 @@ impl RenderAsset for GpuImageExportSource {
 }
 
 #[derive(Component, ExtractComponent, Clone, Debug)]
+#[extract_app(RenderApp)]
 pub struct ImageExportStartFrame(u64);
 
 impl Default for ImageExportSettings {
@@ -116,6 +118,7 @@ fn setup_exporters(
 }
 
 #[derive(Component, ExtractComponent, Clone, Default, Debug)]
+#[extract_app(RenderApp)]
 #[require(ImageExportSettings)]
 pub struct ImageExport(pub Handle<ImageExportSource>);
 
@@ -180,7 +183,7 @@ fn save_buffer_to_disk(
                     futures_lite::future::block_on(mapping_rx).unwrap().unwrap();
                 }
 
-                slice.get_mapped_range().to_vec()
+                slice.get_mapped_range().unwrap().to_vec()
             };
 
             gpu_source.buffer.unmap();
